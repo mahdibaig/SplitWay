@@ -59,13 +59,13 @@ struct SettingsView: View {
 
                 Section("Money") {
                     NavigationLink("Budgets") {
-                        BudgetsView()
+                        ProGate(feature: .budgets) { BudgetsView() }
                     }
                     NavigationLink("Recurring bills") {
                         RecurringListView()
                     }
                     NavigationLink("Import from Splitwise") {
-                        SplitwiseImportView()
+                        ProGate(feature: .csvImportExport) { SplitwiseImportView() }
                     }
                 }
 
@@ -106,7 +106,15 @@ struct SettingsView: View {
                                 }
                             }
                         }
-                        Button("Add group") { showAddGroupSheet = true }
+                        Button("Add group") {
+                            // Free tier gets 1 group; a 2nd needs Pro.
+                            if services.subscriptionService.canUse(.unlimitedGroups)
+                                || groupService.groupsList.isEmpty {
+                                showAddGroupSheet = true
+                            } else {
+                                showPaywall = true
+                            }
+                        }
                     }
                 }
 

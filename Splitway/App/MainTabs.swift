@@ -27,7 +27,7 @@ struct MainTabs: View {
                     .tag(AppTab.reports)
                     .tabItem { Label("Reports", systemImage: "chart.pie.fill") }
 
-                AssistantView()
+                ProGate(feature: .aiAssistant) { AssistantView() }
                     .tag(AppTab.assistant)
                     .tabItem { Label("Assistant", systemImage: "bubble.left.and.bubble.right.fill") }
 

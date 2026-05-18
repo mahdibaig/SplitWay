@@ -47,9 +47,11 @@ private final class AddExpenseVMHolder: ObservableObject {
 /// changes actually re-render the UI and the Save button enables.
 private struct AddExpenseForm: View {
     @ObservedObject var viewModel: AddExpenseViewModel
+    @EnvironmentObject private var subscriptions: SubscriptionService
     @Environment(\.dismiss) private var dismiss
     @State private var showCategoryPicker = false
     @State private var showReceiptScan = false
+    @State private var showPaywall = false
 
     var body: some View {
         ScrollView {
@@ -82,7 +84,11 @@ private struct AddExpenseForm: View {
             }
             ToolbarItem(placement: .principal) {
                 Button {
-                    showReceiptScan = true
+                    if subscriptions.canUse(.receiptOCR) {
+                        showReceiptScan = true
+                    } else {
+                        showPaywall = true
+                    }
                 } label: {
                     Image(systemName: "doc.text.viewfinder")
                         .foregroundStyle(Color.brand)
@@ -110,6 +116,9 @@ private struct AddExpenseForm: View {
         }
         .fullScreenCover(isPresented: $showReceiptScan) {
             ReceiptScanFlow()
+        }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView(feature: .receiptOCR)
         }
     }
 

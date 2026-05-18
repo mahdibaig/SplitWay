@@ -9,29 +9,44 @@ struct ReportsView: View {
     @EnvironmentObject private var expenseService: ExpenseService
     @EnvironmentObject private var householdService: HouseholdService
 
+    @EnvironmentObject private var subscriptions: SubscriptionService
+
     @State private var selectedMonth: Date = Date()
     @State private var scope: ReportScope = .household
     @State private var trendWindow: TrendWindow = .six
+    @State private var showPaywall = false
 
     var body: some View {
-        NavigationStack {
+        // Free tier: basic reports = current month, household only, no
+        // trends. Pro unlocks scope toggle, month nav, and trends.
+        let pro = subscriptions.canUse(.fullReports)
+        let effectiveScope: ReportScope = pro ? scope : .household
+        let effectiveMonth: Date = pro ? selectedMonth : Date()
+
+        return NavigationStack {
             ScrollView {
                 let snapshot = ReportSnapshot(
                     expenses: expenseService.expensesList,
-                    selectedMonth: selectedMonth,
-                    scope: scope,
+                    selectedMonth: effectiveMonth,
+                    scope: effectiveScope,
                     meID: householdService.currentMember?.id,
                     trendMonths: trendWindow.rawValue
                 )
 
                 VStack(spacing: Spacing.cardGap) {
-                    scopePicker
-                    monthPicker
+                    if pro {
+                        scopePicker
+                        monthPicker
+                    }
                     heroCard(snapshot: snapshot)
 
                     if snapshot.total > 0 || snapshot.priorTotal > 0 {
                         categoryCard(snapshot: snapshot)
-                        trendCard(snapshot: snapshot)
+                        if pro {
+                            trendCard(snapshot: snapshot)
+                        } else {
+                            trendsUpsell
+                        }
                         if !snapshot.topExpenses.isEmpty {
                             topExpensesCard(snapshot: snapshot)
                         }
@@ -47,7 +62,39 @@ struct ReportsView: View {
             .navigationTitle("Reports")
             .task { await expenseService.refresh() }
             .refreshable { await expenseService.refresh() }
+            .sheet(isPresented: $showPaywall) {
+                PaywallView(feature: .fullReports)
+            }
         }
+    }
+
+    private var trendsUpsell: some View {
+        Button {
+            showPaywall = true
+        } label: {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text("Trends and personal view")
+                        .font(.cardTitle)
+                        .foregroundStyle(Color.text1)
+                    Spacer()
+                    Image(systemName: "lock.fill")
+                        .font(.caption)
+                        .foregroundStyle(Color.brand)
+                }
+                Text("Splitway Pro adds 3, 6, 9, and 12-month trends, month-by-month history, and a Just-me spending breakdown.")
+                    .font(.cardLabel)
+                    .foregroundStyle(Color.text2)
+                Text("See plans")
+                    .font(.cardLabel.weight(.semibold))
+                    .foregroundStyle(Color.brand2)
+                    .padding(.top, 2)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(Spacing.cardPad)
+            .background(Color.brandSoft, in: .rect(cornerRadius: Radius.card))
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Scope toggle
