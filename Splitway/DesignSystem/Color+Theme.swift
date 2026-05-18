@@ -20,7 +20,7 @@ extension Color {
     /// baked-in background of the onboarding video (no seam). Not adaptive:
     /// the video is the same tan regardless of appearance, and onboarding is
     /// locked to a light color scheme so text stays readable on it.
-    static let onboardingBg = Color(hex: 0xEAC6A3)
+    static let onboardingBg = Color(hex: 0xFFFFFF)
     // Dark surfaces are near-black warm tiers (Apple-style elevation on a
     // true-black base): each step is just light enough to read as a layer.
     static let surface   = adaptive(light: 0xfdf8f0, dark: 0x161210)
