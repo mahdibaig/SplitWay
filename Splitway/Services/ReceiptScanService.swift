@@ -8,17 +8,20 @@ final class ReceiptScanService: ObservableObject {
     private let householdService: HouseholdService
     private let sharedItemRuleService: SharedItemRuleService
     private let cleanupService: ReceiptCleanupService
+    private let retention: ReceiptRetentionService
 
     init(
         expenses: ExpenseRepository,
         householdService: HouseholdService,
         sharedItemRuleService: SharedItemRuleService,
-        cleanupService: ReceiptCleanupService
+        cleanupService: ReceiptCleanupService,
+        retention: ReceiptRetentionService
     ) {
         self.expenses = expenses
         self.householdService = householdService
         self.sharedItemRuleService = sharedItemRuleService
         self.cleanupService = cleanupService
+        self.retention = retention
     }
 
     /// Compresses the image, runs Vision OCR, parses lines, batches the items
@@ -144,7 +147,7 @@ final class ReceiptScanService: ObservableObject {
             notes: nil,
             isRecurringInstance: false,
             recurringTemplateID: nil,
-            receiptImageData: draft.imageData,
+            receiptImageData: retention.shouldStoreNewReceipts ? draft.imageData : nil,
             lineItems: lineItems,
             softDeletedAt: nil
         )

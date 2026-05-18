@@ -400,7 +400,7 @@ that Splitway should beat.
   - Touch: ReceiptParser → ParserRegistry. Each store gets a .swift file
     under Splitway/Services/ReceiptParsers/.
 
-  **Receipt retention policy UI.**
+  [x] **Receipt retention policy UI.** Done 2026-05-18. Settings > Privacy: never / 6mo / 12mo / forever. Purge runs at app launch (no BGTaskScheduler entitlement needed for beta) and immediately on policy change. "never" drops the photo at save time and retroactively sweeps existing ones. Line items + totals always kept. Follow-up: BGTaskScheduler background purge is a later enhancement.
 
   - Acceptance: in Settings → Privacy, the user picks 6mo / 12mo /
     forever / never. Receipts older than the policy are purged
@@ -463,7 +463,7 @@ This beats Splitwise on individual price (\$24.99 vs \$29.99), crushes
 them on couples (\$39.99 vs \$59.98 for 2× Pro), and captures the
 Cashew-style \"pay once\" crowd with the lifetime SKU.
 
-- **Set up StoreKit 2 product configurations in App Store Connect.**
+- [ ] **Set up StoreKit 2 product configurations in App Store Connect.** STILL EXTERNAL (your task). Local `Splitway/Splitway.storekit` config created 2026-05-18 for dev/testing; attach it in Xcode (Edit Scheme > Run > Options > StoreKit Configuration).
 
   - Acceptance: three products live --- splitway_individual_yearly,
     splitway_family_yearly, splitway_household_lifetime. 14-day intro
@@ -471,7 +471,7 @@ Cashew-style \"pay once\" crowd with the lifetime SKU.
 
   - Touch: App Store Connect (no code yet).
 
-  **Subscription service in the codebase.**
+  [x] **Subscription service in the codebase.** Done 2026-05-18. `SubscriptionService` (StoreKit 2): products, entitlements, purchase/restore, transaction updates, `tier`/`isPro`, `canUse(_:)`. DEBUG dev-unlock toggle. Restore button in Settings.
 
   - Acceptance: a SubscriptionService reads StoreKit 2 transactions,
     surfaces isPro: Bool + tier: .free \| .individual \| .family \|
@@ -482,7 +482,7 @@ Cashew-style \"pay once\" crowd with the lifetime SKU.
 
   - Restore-purchases button in Settings is mandatory for App Review.
 
-  **Feature-gating layer.**
+  [x] **Feature-gating layer.** Done 2026-05-18. `FeatureFlag` enum + `ProGate` wrapper + inline checks. Gates live on: Budgets, Splitwise import, Assistant tab, receipt scan, 2nd+ group, Reports trends/scope/month-nav. Free-vs-Pro matrix from HANDOFF implemented exactly; daily expense cap never gated.
 
   - Acceptance: a single FeatureFlag enum lists Pro-gated features.
     ViewModels check subscriptionService.canUse(.receiptOCR) rather than
@@ -546,7 +546,7 @@ Cashew-style \"pay once\" crowd with the lifetime SKU.
 > **Critical:** the daily expense cap is NOT a free-vs-Pro lever. Free
 > users always get unlimited expense entries.
 
-- **Paywall view.**
+- [x] **Paywall view.** Done 2026-05-18. `PaywallView`: brand-matched, 3 SKUs with Family/Lifetime highlighted, contextual feature pitch, 14-day trial copy, restore. Graceful "unavailable" state when no products load.
 
   - Acceptance: a single PaywallView component shown when a free user
     taps a locked feature. Lists the three SKUs side by side, highlights

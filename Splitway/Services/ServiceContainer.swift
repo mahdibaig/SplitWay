@@ -35,6 +35,7 @@ final class ServiceContainer: ObservableObject {
     let assistantPreferences: AssistantPreferences
     let assistantService: AssistantService
     let receiptCleanupService: ReceiptCleanupService
+    let receiptRetentionService: ReceiptRetentionService
     let splitwiseImportService: SplitwiseImportService
     let subscriptionService: SubscriptionService
 
@@ -120,11 +121,15 @@ final class ServiceContainer: ObservableObject {
         let receiptCleanupService = ReceiptCleanupService(preferences: assistantPreferences)
         self.receiptCleanupService = receiptCleanupService
 
+        let receiptRetentionService = ReceiptRetentionService(expenses: expensesRepo)
+        self.receiptRetentionService = receiptRetentionService
+
         self.receiptScanService = ReceiptScanService(
             expenses: expensesRepo,
             householdService: householdService,
             sharedItemRuleService: sharedItemRuleService,
-            cleanupService: receiptCleanupService
+            cleanupService: receiptCleanupService,
+            retention: receiptRetentionService
         )
 
         self.splitwiseImportService = SplitwiseImportService(

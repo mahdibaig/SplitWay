@@ -28,6 +28,7 @@ struct AppCoordinator: View {
             await services.notificationService.refreshAuthStatus()
             services.notificationPreferences.purgeStaleKeys(currentMonthKey: monthKey())
             if householdService.currentHousehold != nil {
+                await services.receiptRetentionService.purgeIfNeeded()
                 await services.recurringService.processDue()
                 await services.expenseService.refresh()
                 await services.budgetService.refresh()

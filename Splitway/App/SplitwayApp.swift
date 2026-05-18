@@ -23,6 +23,7 @@ struct SplitwayApp: App {
                 .environmentObject(services.assistantPreferences)
                 .environmentObject(services.assistantService)
                 .environmentObject(services.subscriptionService)
+                .environmentObject(services.receiptRetentionService)
                 .tint(.brand)
                 .preferredColorScheme(
                     AppearanceMode(rawValue: appearanceRaw)?.colorScheme

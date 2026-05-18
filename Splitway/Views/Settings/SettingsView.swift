@@ -83,6 +83,18 @@ struct SettingsView: View {
                     }
                 }
 
+                Section {
+                    Picker("Keep receipts", selection: retentionBinding) {
+                        ForEach(RetentionPolicy.allCases) { p in
+                            Text(p.label).tag(p)
+                        }
+                    }
+                } header: {
+                    Text("Privacy")
+                } footer: {
+                    Text(services.receiptRetentionService.policy.detail)
+                }
+
                 if householdService.currentHousehold?.groupsEnabled == true {
                     Section("Groups") {
                         if groupService.groupsList.isEmpty {
@@ -219,6 +231,18 @@ struct SettingsView: View {
         if names.isEmpty { return "No members" }
         if names.count <= 2 { return names.joined(separator: ", ") }
         return "\(names.prefix(2).joined(separator: ", ")) and \(names.count - 2) more"
+    }
+
+    private var retentionBinding: Binding<RetentionPolicy> {
+        Binding(
+            get: { services.receiptRetentionService.policy },
+            set: { newValue in
+                services.receiptRetentionService.policy = newValue
+                // Apply immediately so switching to a shorter window (or
+                // "never") cleans up existing receipts right away.
+                Task { await services.receiptRetentionService.purgeIfNeeded() }
+            }
+        )
     }
 
     private var iCloudStatusLabel: String {

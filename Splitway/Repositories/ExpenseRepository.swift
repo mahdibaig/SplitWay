@@ -7,6 +7,10 @@ protocol ExpenseRepository: Sendable {
     func update(_ expense: Expense) async throws
     func softDelete(id: UUID) async throws
     func hardDeleteSoftDeletedOlderThan(_ date: Date) async throws
+    /// Nils out receiptImageData for expenses dated before `cutoff`. Returns
+    /// how many were purged. The expense + line items are kept.
+    @discardableResult
+    func purgeReceiptImages(olderThan cutoff: Date) async throws -> Int
 }
 
 final class CoreDataExpenseRepository: ExpenseRepository {
@@ -88,6 +92,24 @@ final class CoreDataExpenseRepository: ExpenseRepository {
             let stale = try ctx.fetch(request)
             for e in stale { ctx.delete(e) }
             try ctx.save()
+        }
+    }
+
+    @discardableResult
+    func purgeReceiptImages(olderThan cutoff: Date) async throws -> Int {
+        try await persistence.performBackground { ctx in
+            let request = ExpenseEntity.fetchRequest()
+            request.predicate = NSPredicate(
+                format: "receiptImageData != nil AND date < %@",
+                cutoff as CVarArg
+            )
+            let stale = try ctx.fetch(request)
+            for e in stale {
+                e.receiptImageData = nil
+                e.updatedAt = Date()
+            }
+            if !stale.isEmpty { try ctx.save() }
+            return stale.count
         }
     }
 
