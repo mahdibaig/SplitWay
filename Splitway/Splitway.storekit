@@ -1,0 +1,88 @@
+{
+  "identifier" : "08432C0C-6335-446F-9157-4CAEBA02C450",
+  "nonRenewingSubscriptions" : [],
+  "products" : [
+    {
+      "displayPrice" : "89.00",
+      "familyShareable" : true,
+      "internalID" : "BCA659B8-E397-4072-9857-97B3B0548124",
+      "localizations" : [
+        {
+          "description" : "Pay once. Splitway Pro forever for your whole household.",
+          "displayName" : "Household Lifetime",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "splitway_household_lifetime",
+      "referenceName" : "Household Lifetime",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_failTransactionsEnabled" : false,
+    "_storeKitErrors" : []
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "49D1AF28-FE86-4449-B8E0-56D8D183597A",
+      "localizations" : [],
+      "name" : "Splitway Pro",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "24.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "BCA4D6A9-6DE0-4312-B05A-8ED3856BBF3A",
+          "introductoryOffer" : {
+            "internalID" : "08645646-530D-4168-BF94-140B63E6C476",
+            "paymentMode" : "free",
+            "subscriptionPeriod" : "P2W"
+          },
+          "localizations" : [
+            {
+              "description" : "Pro for one person. 14-day free trial.",
+              "displayName" : "Individual",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "splitway_individual_yearly",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Individual Yearly",
+          "subscriptionGroupID" : "49D1AF28-FE86-4449-B8E0-56D8D183597A",
+          "type" : "RecurringSubscription"
+        },
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "39.99",
+          "familyShareable" : true,
+          "groupNumber" : 1,
+          "internalID" : "134368CF-8B07-40BC-8FAD-4F5AE4252300",
+          "introductoryOffer" : {
+            "internalID" : "039DE763-92EA-46A5-8249-F9EB03A92CDA",
+            "paymentMode" : "free",
+            "subscriptionPeriod" : "P2W"
+          },
+          "localizations" : [
+            {
+              "description" : "Pro for up to 5 household members. 14-day free trial.",
+              "displayName" : "Family",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "splitway_family_yearly",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Family Yearly",
+          "subscriptionGroupID" : "49D1AF28-FE86-4449-B8E0-56D8D183597A",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}

@@ -36,6 +36,7 @@ final class ServiceContainer: ObservableObject {
     let assistantService: AssistantService
     let receiptCleanupService: ReceiptCleanupService
     let splitwiseImportService: SplitwiseImportService
+    let subscriptionService: SubscriptionService
 
     init(persistence: PersistenceController, accounts: CloudKitAccountService) {
         self.persistence = persistence
@@ -132,6 +133,8 @@ final class ServiceContainer: ObservableObject {
             membersService: membersService,
             expenseService: expenseService
         )
+
+        self.subscriptionService = SubscriptionService()
 
         self.assistantService = AssistantService(
             chatRepository: chatRepo,

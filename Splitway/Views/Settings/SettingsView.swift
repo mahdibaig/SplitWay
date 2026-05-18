@@ -12,6 +12,8 @@ struct SettingsView: View {
     @State private var showAddGroupSheet = false
     @State private var showResetConfirm = false
     @State private var showProfileSheet = false
+    @State private var showPaywall = false
+    @State private var showManageSubscriptions = false
 
     var body: some View {
         NavigationStack {
@@ -127,12 +129,35 @@ struct SettingsView: View {
                     }
                 }
 
+                Section {
+                    LabeledContent("Plan", value: services.subscriptionService.tier.displayName)
+                    if services.subscriptionService.isPro {
+                        Button("Manage subscription") { showManageSubscriptions = true }
+                    } else {
+                        Button("Upgrade to Pro") { showPaywall = true }
+                    }
+                    Button("Restore purchases") {
+                        Task { await services.subscriptionService.restore() }
+                    }
+                    .disabled(services.subscriptionService.isWorking)
+                } header: {
+                    Text("Splitway Pro")
+                } footer: {
+                    Text(services.subscriptionService.isPro
+                         ? "Thanks for supporting Splitway."
+                         : "Free keeps unlimited expenses, all 5 split types, settle up, and recurring bills. Pro adds receipts, full reports, budgets, the assistant, and more.")
+                }
+
                 Section("About") {
                     LabeledContent("Version", value: "0.1.0")
                 }
 
                 #if DEBUG
                 Section {
+                    Toggle("Unlock Pro (dev)", isOn: Binding(
+                        get: { services.subscriptionService.devUnlockPro },
+                        set: { services.subscriptionService.devUnlockPro = $0 }
+                    ))
                     Button("Add test member") {
                         Task { await services.addTestMember() }
                     }
@@ -142,7 +167,7 @@ struct SettingsView: View {
                 } header: {
                     Text("Developer")
                 } footer: {
-                    Text("Add test member: drops a fake housemate in so you can try splits, balances, and settle up before CloudKit sharing is ready. Reset app data: deletes everything on this device and sends you back to onboarding. Dev builds only.")
+                    Text("Unlock Pro: bypasses StoreKit so every gated feature is testable. Add test member: drops a fake housemate in. Reset app data: deletes everything and returns to onboarding. Dev builds only.")
                 }
                 #endif
             }
@@ -160,6 +185,10 @@ struct SettingsView: View {
             .sheet(isPresented: $showProfileSheet) {
                 ProfileEditSheet()
             }
+            .sheet(isPresented: $showPaywall) {
+                PaywallView(feature: nil)
+            }
+            .manageSubscriptionsSheet(isPresented: $showManageSubscriptions)
             .confirmationDialog(
                 "Reset app data?",
                 isPresented: $showResetConfirm,
