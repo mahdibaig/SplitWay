@@ -5,20 +5,21 @@ struct WelcomeView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Spacer()
-
-            // Onboarding hero: plays the mascot clip once then holds on the
-            // final frame. Falls back to the static mascot image if the
-            // bundled clip is somehow missing.
+            // Hero: the mascot clip fills the entire top region, edge to edge,
+            // and holds on its final frame. The clip's own (black) background
+            // becomes the top region's backdrop, which blends seamlessly in
+            // dark mode (app bg is now black).
             if let url = Bundle.main.url(forResource: "onboarding", withExtension: "mp4") {
-                IntroVideoView(url: url)
-                    .frame(height: 420)
-                    .frame(maxWidth: .infinity)
+                IntroVideoView(url: url, gravity: .resizeAspectFill)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .clipped()
                     .accessibilityHidden(true)
             } else {
                 CapybaraPlaceholder(size: 260)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
 
+            // Everything else pinned to the bottom.
             VStack(spacing: 8) {
                 Text("Welcome to")
                     .font(.system(.title3, design: .serif).italic())
@@ -33,12 +34,7 @@ struct WelcomeView: View {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, Spacing.screenH)
                     .padding(.top, 12)
-            }
-            .padding(.top, 24)
 
-            Spacer()
-
-            VStack(spacing: 8) {
                 Button(action: onContinue) {
                     Text("Get started")
                         .font(.headline)
@@ -47,12 +43,17 @@ struct WelcomeView: View {
                         .background(Color.cta, in: .rect(cornerRadius: Radius.pill))
                         .foregroundStyle(Color.ctaText)
                 }
+                .padding(.horizontal, Spacing.screenH)
+                .padding(.top, 20)
+
                 Text("By continuing, you agree to our Privacy Policy")
                     .font(.caption)
                     .foregroundStyle(Color.text2)
             }
-            .padding(.horizontal, Spacing.screenH)
+            .padding(.top, 24)
             .padding(.bottom, 24)
+            .frame(maxWidth: .infinity)
+            .background(Color.bg)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.bg.ignoresSafeArea())

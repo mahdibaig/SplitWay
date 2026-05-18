@@ -3,6 +3,7 @@ import SwiftUI
 @main
 struct SplitwayApp: App {
     @StateObject private var services = ServiceContainer.live()
+    @AppStorage(AppearanceMode.storageKey) private var appearanceRaw = AppearanceMode.system.rawValue
 
     var body: some Scene {
         WindowGroup {
@@ -22,6 +23,9 @@ struct SplitwayApp: App {
                 .environmentObject(services.assistantPreferences)
                 .environmentObject(services.assistantService)
                 .tint(.brand)
+                .preferredColorScheme(
+                    AppearanceMode(rawValue: appearanceRaw)?.colorScheme
+                )
         }
     }
 }

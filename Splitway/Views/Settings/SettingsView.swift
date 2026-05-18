@@ -6,6 +6,8 @@ struct SettingsView: View {
     @EnvironmentObject private var groupService: GroupService
     @EnvironmentObject private var services: ServiceContainer
 
+    @AppStorage(AppearanceMode.storageKey) private var appearanceRaw = AppearanceMode.system.rawValue
+
     @State private var workingError: String?
     @State private var showAddGroupSheet = false
     @State private var showResetConfirm = false
@@ -66,6 +68,11 @@ struct SettingsView: View {
                 }
 
                 Section("Preferences") {
+                    Picker("Appearance", selection: $appearanceRaw) {
+                        ForEach(AppearanceMode.allCases) { mode in
+                            Text(mode.label).tag(mode.rawValue)
+                        }
+                    }
                     NavigationLink("Notifications") {
                         NotificationsView()
                     }

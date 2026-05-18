@@ -15,7 +15,7 @@ extension Color {
     }
 
     // Surfaces
-    static let bg        = adaptive(light: 0xf5ede0, dark: 0x1a130d)
+    static let bg        = adaptive(light: 0xf5ede0, dark: 0x000000)
     static let surface   = adaptive(light: 0xfdf8f0, dark: 0x26201a)
     static let surface2  = adaptive(light: 0xf0e8d8, dark: 0x322a22)
     static let surface3  = adaptive(light: 0xe8dcc8, dark: 0x3d342a)
