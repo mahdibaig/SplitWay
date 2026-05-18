@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Receipt Scan — Camera</title>
+<link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css" rel="stylesheet">
+<style>
+body { margin: 0; padding: 32px 20px; background: #e8dcc8; font-family: -apple-system, BlinkMacSystemFont, sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+.page-title { text-align: center; color: #2a1d14; font-size: 18px; font-weight: 600; margin: 0 0 6px; }
+.page-subtitle { text-align: center; color: #8a7a6a; font-size: 13px; margin: 0 0 28px; max-width: 600px; }
+.phone-wrap { display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; }
+input { font-family: inherit; }
+button { cursor: pointer; font-family: inherit; }
+</style>
+</head>
+<body>
+<p class="page-title">Receipt Scan — Camera</p>
+<p class="page-subtitle">Dark mode camera with brand orange frame guides.</p>
+<div class="phone-wrap">
+<div style="width: 390px; background: #f5ede0; border-radius: 48px; padding: 12px; box-sizing: border-box; border: 8px solid #1a1a1a;">
+<div style="background: #1a1a1a; border-radius: 36px; overflow: hidden; position: relative; min-height: 740px;">
+<div style="padding: 12px 24px 0; display: flex; justify-content: space-between; align-items: center; font-size: 15px; font-weight: 500; color: #fdf8f0;">
+<span>9:41</span>
+<div style="display: flex; gap: 6px; align-items: center;">
+<i class="ti ti-signal-4g" style="font-size: 14px;"></i>
+<i class="ti ti-wifi" style="font-size: 14px;"></i>
+<i class="ti ti-battery-3" style="font-size: 16px;"></i>
+</div>
+</div>
+
+<div style="padding: 18px 22px; display: flex; justify-content: space-between; align-items: center;">
+<i class="ti ti-x" style="font-size: 22px; color: #fdf8f0;"></i>
+<p style="font-size: 14px; color: #fdf8f0; margin: 0; font-weight: 500;">Scan receipt</p>
+<i class="ti ti-bolt" style="font-size: 22px; color: #fdf8f0; opacity: 0.5;"></i>
+</div>
+
+<div style="position: absolute; top: 110px; left: 30px; right: 30px; bottom: 220px;">
+<div style="position: absolute; inset: 0; background: linear-gradient(135deg, #2a2520 0%, #3a3530 100%); border-radius: 12px; overflow: hidden;">
+<div style="position: absolute; top: 30px; left: 50%; transform: translateX(-50%) rotate(-2deg); width: 75%; background: #fdf8f0; padding: 14px 12px; border-radius: 2px; font-family: monospace; font-size: 9px; color: #2a1d14; line-height: 1.6;">
+<p style="text-align: center; margin: 0; font-weight: 700; font-size: 11px;">H-E-B</p>
+<p style="text-align: center; margin: 0; font-size: 8px;">11/10/2025  14:23</p>
+<div style="border-top: 1px dashed #c4b0a0; margin: 6px 0;"></div>
+<div style="display: flex; justify-content: space-between;"><span>WHL MLK GAL</span><span>4.29</span></div>
+<div style="display: flex; justify-content: space-between;"><span>BANANAS LB</span><span>1.84</span></div>
+<div style="display: flex; justify-content: space-between;"><span>CHKN BREAST</span><span>12.47</span></div>
+<div style="display: flex; justify-content: space-between;"><span>RICE BSMTI 5</span><span>14.99</span></div>
+<div style="display: flex; justify-content: space-between;"><span>OLIVE OIL</span><span>18.50</span></div>
+<div style="display: flex; justify-content: space-between;"><span>SNICKERS</span><span>2.49</span></div>
+<div style="display: flex; justify-content: space-between;"><span>FACE WASH</span><span>9.99</span></div>
+<div style="border-top: 1px dashed #c4b0a0; margin: 6px 0;"></div>
+<div style="display: flex; justify-content: space-between;"><span>SUBTOTAL</span><span>64.57</span></div>
+<div style="display: flex; justify-content: space-between;"><span>TAX</span><span>5.33</span></div>
+<div style="display: flex; justify-content: space-between; font-weight: 700;"><span>TOTAL</span><span>69.90</span></div>
+</div>
+</div>
+<div style="position: absolute; inset: 0; border: 2px solid #f29545; border-radius: 12px; pointer-events: none;"></div>
+<div style="position: absolute; top: -1px; left: -1px; width: 24px; height: 24px; border-top: 3px solid #f29545; border-left: 3px solid #f29545; border-top-left-radius: 12px;"></div>
+<div style="position: absolute; top: -1px; right: -1px; width: 24px; height: 24px; border-top: 3px solid #f29545; border-right: 3px solid #f29545; border-top-right-radius: 12px;"></div>
+<div style="position: absolute; bottom: -1px; left: -1px; width: 24px; height: 24px; border-bottom: 3px solid #f29545; border-left: 3px solid #f29545; border-bottom-left-radius: 12px;"></div>
+<div style="position: absolute; bottom: -1px; right: -1px; width: 24px; height: 24px; border-bottom: 3px solid #f29545; border-right: 3px solid #f29545; border-bottom-right-radius: 12px;"></div>
+</div>
+
+<div style="position: absolute; top: 62%; left: 22px; right: 22px; text-align: center; padding: 12px; background: rgba(0,0,0,0.5); border-radius: 12px;">
+<p style="font-size: 12px; color: #fdf8f0; margin: 0;">Position receipt inside the frame</p>
+</div>
+
+<div style="position: absolute; bottom: 30px; left: 0; right: 0; display: flex; justify-content: space-around; align-items: center; padding: 0 32px;">
+<div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center;">
+<i class="ti ti-photo" style="font-size: 24px; color: #fdf8f0;"></i>
+</div>
+<div style="width: 72px; height: 72px; border-radius: 50%; background: #fdf8f0; border: 4px solid rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center;">
+<div style="width: 56px; height: 56px; border-radius: 50%; background: #fdf8f0;"></div>
+</div>
+<div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center;">
+<i class="ti ti-refresh" style="font-size: 24px; color: #fdf8f0;"></i>
+</div>
+</div>
+
+<div style="position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); width: 130px; height: 4px; background: #fdf8f0; opacity: 0.5; border-radius: 100px;"></div>
+
+</div>
+</div>
+</div>
+</body>
+</html>

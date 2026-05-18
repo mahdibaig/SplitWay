@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Category Picker</title>
+<link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css" rel="stylesheet">
+<style>
+body { margin: 0; padding: 32px 20px; background: #e8dcc8; font-family: -apple-system, BlinkMacSystemFont, sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+.page-title { text-align: center; color: #2a1d14; font-size: 18px; font-weight: 600; margin: 0 0 6px; }
+.page-subtitle { text-align: center; color: #8a7a6a; font-size: 13px; margin: 0 0 28px; max-width: 600px; }
+.phone-wrap { display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; }
+input { font-family: inherit; }
+button { cursor: pointer; font-family: inherit; }
+</style>
+</head>
+<body>
+<p class="page-title">Category Picker</p>
+<p class="page-subtitle">Selected category shows inline budget context. One color per category.</p>
+<div class="phone-wrap">
+<div style="width: 390px; background: #f5ede0; border-radius: 48px; padding: 12px; box-sizing: border-box; border: 8px solid #1a1a1a;">
+<div style="background: #f5ede0; border-radius: 36px; overflow: hidden; position: relative; min-height: 740px;">
+<div style="padding: 12px 24px 0; display: flex; justify-content: space-between; align-items: center; font-size: 15px; font-weight: 500; color: #2a1d14;">
+<span>9:41</span>
+<div style="display: flex; gap: 6px; align-items: center;">
+<i class="ti ti-signal-4g" style="font-size: 14px;"></i>
+<i class="ti ti-wifi" style="font-size: 14px;"></i>
+<i class="ti ti-battery-3" style="font-size: 16px;"></i>
+</div>
+</div>
+
+<div style="padding: 18px 22px 18px; display: flex; align-items: center; gap: 14px;">
+<i class="ti ti-arrow-left" style="font-size: 22px; color: #2a1d14;"></i>
+<p style="font-size: 17px; font-weight: 500; color: #2a1d14; margin: 0;">Choose category</p>
+</div>
+
+<div style="margin: 0 22px 16px; background: #fdf8f0; border-radius: 14px; padding: 10px 14px; display: flex; align-items: center; gap: 8px;">
+<i class="ti ti-search" style="font-size: 16px; color: #c4b0a0;"></i>
+<span style="font-size: 13px; color: #c4b0a0;">Search categories</span>
+</div>
+
+<div style="padding: 0 22px;">
+<div style="background: #fdf8f0; border-radius: 16px; padding: 14px 16px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; border: 1.5px solid #b88a5e;">
+<div style="width: 38px; height: 38px; border-radius: 12px; background: #f0e0c8; display: flex; align-items: center; justify-content: center;">
+<i class="ti ti-shopping-cart" style="font-size: 18px; color: #b88a5e;"></i>
+</div>
+<div style="flex: 1;">
+<p style="font-size: 14px; margin: 0; font-weight: 500; color: #2a1d14;">Groceries</p>
+<p style="font-size: 11px; margin: 2px 0 0; color: #8a7a6a;">$486 of $600 this month</p>
+</div>
+<i class="ti ti-check" style="font-size: 18px; color: #b88a5e;"></i>
+</div>
+<div style="background: #fdf8f0; border-radius: 16px; padding: 14px 16px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; ">
+<div style="width: 38px; height: 38px; border-radius: 12px; background: #e8d4c0; display: flex; align-items: center; justify-content: center;">
+<i class="ti ti-bowl" style="font-size: 18px; color: #d4824a;"></i>
+</div>
+<div style="flex: 1;">
+<p style="font-size: 14px; margin: 0; font-weight: 500; color: #2a1d14;">Dining out</p>
+
+</div>
+
+</div>
+<div style="background: #fdf8f0; border-radius: 16px; padding: 14px 16px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; ">
+<div style="width: 38px; height: 38px; border-radius: 12px; background: #e8dcc8; display: flex; align-items: center; justify-content: center;">
+<i class="ti ti-home" style="font-size: 18px; color: #8a6a4a;"></i>
+</div>
+<div style="flex: 1;">
+<p style="font-size: 14px; margin: 0; font-weight: 500; color: #2a1d14;">Rent</p>
+
+</div>
+
+</div>
+<div style="background: #fdf8f0; border-radius: 16px; padding: 14px 16px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; ">
+<div style="width: 38px; height: 38px; border-radius: 12px; background: #d8e4d0; display: flex; align-items: center; justify-content: center;">
+<i class="ti ti-bolt" style="font-size: 18px; color: #5a7d3e;"></i>
+</div>
+<div style="flex: 1;">
+<p style="font-size: 14px; margin: 0; font-weight: 500; color: #2a1d14;">Utilities</p>
+
+</div>
+
+</div>
+<div style="background: #fdf8f0; border-radius: 16px; padding: 14px 16px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; ">
+<div style="width: 38px; height: 38px; border-radius: 12px; background: #d0d8e4; display: flex; align-items: center; justify-content: center;">
+<i class="ti ti-car" style="font-size: 18px; color: #4a6a8a;"></i>
+</div>
+<div style="flex: 1;">
+<p style="font-size: 14px; margin: 0; font-weight: 500; color: #2a1d14;">Transportation</p>
+
+</div>
+
+</div>
+<div style="background: #fdf8f0; border-radius: 16px; padding: 14px 16px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; ">
+<div style="width: 38px; height: 38px; border-radius: 12px; background: #e4d0d8; display: flex; align-items: center; justify-content: center;">
+<i class="ti ti-music" style="font-size: 18px; color: #8a4a6a;"></i>
+</div>
+<div style="flex: 1;">
+<p style="font-size: 14px; margin: 0; font-weight: 500; color: #2a1d14;">Entertainment</p>
+
+</div>
+
+</div>
+<div style="background: #fdf8f0; border-radius: 16px; padding: 14px 16px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; ">
+<div style="width: 38px; height: 38px; border-radius: 12px; background: #e0dcd0; display: flex; align-items: center; justify-content: center;">
+<i class="ti ti-package" style="font-size: 18px; color: #6a6a4a;"></i>
+</div>
+<div style="flex: 1;">
+<p style="font-size: 14px; margin: 0; font-weight: 500; color: #2a1d14;">Household supplies</p>
+
+</div>
+
+</div>
+</div>
+
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Budgets</title>
+<link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css" rel="stylesheet">
+<style>
+body { margin: 0; padding: 32px 20px; background: #e8dcc8; font-family: -apple-system, BlinkMacSystemFont, sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+.page-title { text-align: center; color: #2a1d14; font-size: 18px; font-weight: 600; margin: 0 0 6px; }
+.page-subtitle { text-align: center; color: #8a7a6a; font-size: 13px; margin: 0 0 28px; max-width: 600px; }
+.phone-wrap { display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; }
+input { font-family: inherit; }
+button { cursor: pointer; font-family: inherit; }
+</style>
+</head>
+<body>
+<p class="page-title">Budgets</p>
+<p class="page-subtitle">Hero summary first. Per-category cards with progress. Over-budget shown in coral.</p>
+<div class="phone-wrap">
+<div style="width: 390px; background: #f5ede0; border-radius: 48px; padding: 12px; box-sizing: border-box; border: 8px solid #1a1a1a;">
+<div style="background: #f5ede0; border-radius: 36px; overflow: hidden; position: relative; min-height: 740px;">
+<div style="padding: 12px 24px 0; display: flex; justify-content: space-between; align-items: center; font-size: 15px; font-weight: 500; color: #2a1d14;">
+<span>9:41</span>
+<div style="display: flex; gap: 6px; align-items: center;">
+<i class="ti ti-signal-4g" style="font-size: 14px;"></i>
+<i class="ti ti-wifi" style="font-size: 14px;"></i>
+<i class="ti ti-battery-3" style="font-size: 16px;"></i>
+</div>
+</div>
+
+<div style="padding: 16px 22px 16px; display: flex; align-items: center; gap: 12px;">
+<i class="ti ti-arrow-left" style="font-size: 20px; color: #2a1d14;"></i>
+<p style="font-size: 17px; color: #2a1d14; margin: 0; font-weight: 500; flex: 1;">Budgets</p>
+<i class="ti ti-plus" style="font-size: 20px; color: #b88a5e;"></i>
+</div>
+
+<div style="margin: 0 22px 16px; background: #b88a5e; border-radius: 18px; padding: 16px 18px; color: #fdf8f0;">
+<p style="font-size: 11px; margin: 0; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.5px;">November budget</p>
+<p style="font-size: 24px; margin: 4px 0 6px; font-weight: 500;">$1,847 / $2,100</p>
+<div style="height: 6px; background: rgba(255,255,255,0.25); border-radius: 100px; margin: 8px 0;">
+<div style="width: 88%; height: 100%; background: #fdf8f0; border-radius: 100px;"></div>
+</div>
+<p style="font-size: 11px; margin: 6px 0 0; opacity: 0.85;">$253 left for the month</p>
+</div>
+
+<div style="padding: 0 22px 100px;">
+<div style="background: #fdf8f0; border-radius: 16px; padding: 14px 16px; margin-bottom: 8px; ">
+<div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
+<div style="width: 32px; height: 32px; border-radius: 10px; background: #e8dcc8; display: flex; align-items: center; justify-content: center;">
+<i class="ti ti-home" style="font-size: 16px; color: #8a6a4a;"></i>
+</div>
+<p style="font-size: 13px; color: #2a1d14; margin: 0; font-weight: 500; flex: 1;">Rent</p>
+<p style="font-size: 13px; color: #2a1d14; margin: 0; font-weight: 500;">$745 / $745</p>
+</div>
+<div style="height: 4px; background: #f0e8d8; border-radius: 100px; overflow: hidden;">
+<div style="width: 100%; height: 100%; background: #8a6a4a; border-radius: 100px;"></div>
+</div>
+<p style="font-size: 10px; color: #8a7a6a; margin: 6px 0 0; ">Fully spent</p>
+</div>
+<div style="background: #fdf8f0; border-radius: 16px; padding: 14px 16px; margin-bottom: 8px; ">
+<div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
+<div style="width: 32px; height: 32px; border-radius: 10px; background: #f0e0c8; display: flex; align-items: center; justify-content: center;">
+<i class="ti ti-shopping-cart" style="font-size: 16px; color: #b88a5e;"></i>
+</div>
+<p style="font-size: 13px; color: #2a1d14; margin: 0; font-weight: 500; flex: 1;">Groceries</p>
+<p style="font-size: 13px; color: #2a1d14; margin: 0; font-weight: 500;">$486 / $600</p>
+</div>
+<div style="height: 4px; background: #f0e8d8; border-radius: 100px; overflow: hidden;">
+<div style="width: 81%; height: 100%; background: #b88a5e; border-radius: 100px;"></div>
+</div>
+<p style="font-size: 10px; color: #8a7a6a; margin: 6px 0 0; ">$114 left this month</p>
+</div>
+<div style="background: #fdf8f0; border-radius: 16px; padding: 14px 16px; margin-bottom: 8px; border-left: 3px solid #d4824a;">
+<div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
+<div style="width: 32px; height: 32px; border-radius: 10px; background: #e8d4c0; display: flex; align-items: center; justify-content: center;">
+<i class="ti ti-bowl" style="font-size: 16px; color: #d4824a;"></i>
+</div>
+<p style="font-size: 13px; color: #2a1d14; margin: 0; font-weight: 500; flex: 1;">Dining out</p>
+<p style="font-size: 13px; color: #d4824a; margin: 0; font-weight: 500;">$273 / $200</p>
+</div>
+<div style="height: 4px; background: #f0e8d8; border-radius: 100px; overflow: hidden;">
+<div style="width: 100%; height: 100%; background: #d4824a; border-radius: 100px;"></div>
+</div>
+<p style="font-size: 10px; color: #d4824a; margin: 6px 0 0; font-weight: 500;">$73 over budget</p>
+</div>
+<div style="background: #fdf8f0; border-radius: 16px; padding: 14px 16px; margin-bottom: 8px; ">
+<div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
+<div style="width: 32px; height: 32px; border-radius: 10px; background: #d8e4d0; display: flex; align-items: center; justify-content: center;">
+<i class="ti ti-bolt" style="font-size: 16px; color: #5a7d3e;"></i>
+</div>
+<p style="font-size: 13px; color: #2a1d14; margin: 0; font-weight: 500; flex: 1;">Utilities</p>
+<p style="font-size: 13px; color: #2a1d14; margin: 0; font-weight: 500;">$205 / $300</p>
+</div>
+<div style="height: 4px; background: #f0e8d8; border-radius: 100px; overflow: hidden;">
+<div style="width: 68%; height: 100%; background: #5a7d3e; border-radius: 100px;"></div>
+</div>
+<p style="font-size: 10px; color: #8a7a6a; margin: 6px 0 0; ">$95 left this month</p>
+</div>
+<div style="background: #fdf8f0; border-radius: 16px; padding: 14px 16px; margin-bottom: 8px; ">
+<div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
+<div style="width: 32px; height: 32px; border-radius: 10px; background: #d0d8e4; display: flex; align-items: center; justify-content: center;">
+<i class="ti ti-car" style="font-size: 16px; color: #4a6a8a;"></i>
+</div>
+<p style="font-size: 13px; color: #2a1d14; margin: 0; font-weight: 500; flex: 1;">Transportation</p>
+<p style="font-size: 13px; color: #2a1d14; margin: 0; font-weight: 500;">$138 / $250</p>
+</div>
+<div style="height: 4px; background: #f0e8d8; border-radius: 100px; overflow: hidden;">
+<div style="width: 55%; height: 100%; background: #4a6a8a; border-radius: 100px;"></div>
+</div>
+<p style="font-size: 10px; color: #8a7a6a; margin: 6px 0 0; ">$112 left this month</p>
+</div>
+
+<div style="background: transparent; border: 1.5px dashed #c4b0a0; border-radius: 16px; padding: 14px 16px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+<i class="ti ti-plus" style="font-size: 16px; color: #b88a5e;"></i>
+<p style="font-size: 13px; color: #b88a5e; margin: 0; font-weight: 500;">Add a budget</p>
+</div>
+</div>
+
+</div>
+</div>
+</div>
+</body>
+</html>

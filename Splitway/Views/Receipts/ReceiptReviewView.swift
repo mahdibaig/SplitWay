@@ -1,0 +1,358 @@
+import SwiftUI
+
+/// Review screen for a scanned receipt. Each line item shows a status badge
+/// (known/new) and tappable assignment summary. The assignment sheet now has
+/// a three-option "remember" picker so future scans pre-fill from rules.
+struct ReceiptReviewView: View {
+    let draft: ReceiptDraft
+    let image: UIImage
+    let members: [HouseholdMember]
+    let onSave: ([ReviewItem], ExpenseCategory, String, Date) async -> Void
+    let onCancel: () -> Void
+
+    @State private var items: [ReviewItem] = []
+    @State private var category: ExpenseCategory = .groceries
+    @State private var descriptionText: String = ""
+    @State private var date: Date = Date()
+    @State private var assigningItemID: UUID?
+    @State private var showCategoryPicker = false
+    @State private var isWorking = false
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: Spacing.cardGap) {
+                receiptThumbnail
+                recognitionBanner
+                summaryCard
+                descriptionCard
+                categoryCard
+                dateCard
+                itemsSection
+            }
+            .padding(.horizontal, Spacing.screenH)
+            .padding(.vertical, 16)
+        }
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    Task { await commit() }
+                } label: {
+                    if isWorking { ProgressView() }
+                    else { Text("Save").bold() }
+                }
+                .disabled(items.isEmpty || isWorking)
+            }
+        }
+        .onAppear(perform: loadInitial)
+        .sheet(item: $assigningItemID) { id in
+            if let idx = items.firstIndex(where: { $0.id == id }) {
+                LineItemAssignmentSheet(
+                    itemName: items[idx].lineItem.displayName,
+                    members: members,
+                    assignedIDs: Set(items[idx].lineItem.assignedToUserIDs),
+                    rememberChoice: items[idx].rememberChoice,
+                    onSave: { newAssignment, newRemember in
+                        items[idx].lineItem.assignedToUserIDs = Array(newAssignment)
+                        items[idx].rememberChoice = newRemember
+                        assigningItemID = nil
+                    }
+                )
+            }
+        }
+        .sheet(isPresented: $showCategoryPicker) {
+            CategoryPickerView(selected: category) { newValue in
+                category = newValue
+                showCategoryPicker = false
+            }
+        }
+    }
+
+    private var receiptThumbnail: some View {
+        Image(uiImage: image)
+            .resizable()
+            .scaledToFit()
+            .frame(maxWidth: .infinity, maxHeight: 200)
+            .clipShape(.rect(cornerRadius: Radius.card))
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.card)
+                    .stroke(Color.borderSubtle, lineWidth: 1)
+            )
+    }
+
+    @ViewBuilder
+    private var recognitionBanner: some View {
+        let known = items.filter { $0.matchedRule != nil }.count
+        let new = items.count - known
+        if !items.isEmpty {
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: "sparkles")
+                    .foregroundStyle(Color.success)
+                VStack(alignment: .leading, spacing: 2) {
+                    if known == 0 {
+                        Text("\(new) new item\(new == 1 ? "" : "s") to review.")
+                            .font(.cardLabel.weight(.medium))
+                            .foregroundStyle(Color.text1)
+                    } else if new == 0 {
+                        Text("Recognized \(known) item\(known == 1 ? "" : "s") from past receipts.")
+                            .font(.cardLabel.weight(.medium))
+                            .foregroundStyle(Color.text1)
+                    } else {
+                        Text("Recognized \(known) item\(known == 1 ? "" : "s") from past receipts. \(new) new to review.")
+                            .font(.cardLabel.weight(.medium))
+                            .foregroundStyle(Color.text1)
+                    }
+                    Text("Green dot = known. Orange dot = new.")
+                        .font(.caption)
+                        .foregroundStyle(Color.text2)
+                }
+                Spacer()
+            }
+            .padding(Spacing.cardPad)
+            .background(Color.successSoft, in: .rect(cornerRadius: Radius.card))
+        }
+    }
+
+    private var summaryCard: some View {
+        let total = items.reduce(Decimal.zero) { $0 + $1.lineItem.amount }
+        return VStack(alignment: .leading, spacing: 4) {
+            Text(draft.merchant ?? "Receipt").font(.cardTitle).foregroundStyle(Color.text1)
+            Text("\(items.count) line item\(items.count == 1 ? "" : "s") · \(CurrencyFormat.usd(total)) total")
+                .font(.cardLabel)
+                .foregroundStyle(Color.text2)
+            if items.isEmpty {
+                Text("No line items detected. You can add them by hand with the + button below, or cancel and use manual entry.")
+                    .font(.caption)
+                    .foregroundStyle(Color.text3)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(Spacing.cardPad)
+        .background(Color.surface, in: .rect(cornerRadius: Radius.card))
+    }
+
+    private var descriptionCard: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Description").font(.cardLabel).foregroundStyle(Color.text2)
+            TextField(draft.merchant ?? "Receipt", text: $descriptionText)
+                .font(.cardTitle)
+                .foregroundStyle(Color.text1)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(Spacing.cardPad)
+        .background(Color.surface, in: .rect(cornerRadius: Radius.card))
+    }
+
+    private var categoryCard: some View {
+        Button { showCategoryPicker = true } label: {
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: Radius.tile)
+                        .fill(Color.categoryBg(category))
+                    Image(systemName: category.sfSymbol).foregroundStyle(Color.categoryFg(category))
+                }
+                .frame(width: 44, height: 44)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Category").font(.cardLabel).foregroundStyle(Color.text2)
+                    Text(category.displayName).font(.cardTitle).foregroundStyle(Color.text1)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").foregroundStyle(Color.text3)
+            }
+            .padding(Spacing.cardPad)
+            .background(Color.surface, in: .rect(cornerRadius: Radius.card))
+        }
+    }
+
+    private var dateCard: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: Radius.tile).fill(Color.brandSoft)
+                Image(systemName: "calendar").foregroundStyle(Color.brand)
+            }
+            .frame(width: 44, height: 44)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Date").font(.cardLabel).foregroundStyle(Color.text2)
+                DatePicker("", selection: $date, displayedComponents: .date)
+                    .labelsHidden()
+                    .tint(Color.brand)
+            }
+            Spacer()
+        }
+        .padding(Spacing.cardPad)
+        .background(Color.surface, in: .rect(cornerRadius: Radius.card))
+    }
+
+    private var itemsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Line items").font(.cardLabel).foregroundStyle(Color.text2)
+                Spacer()
+                Button {
+                    let newItem = LineItem(
+                        id: UUID(),
+                        itemName: "",
+                        displayName: "",
+                        normalizedItemName: "",
+                        amount: 0,
+                        quantity: 1,
+                        assignedToUserIDs: [],
+                        category: nil
+                    )
+                    items.append(ReviewItem(
+                        lineItem: newItem,
+                        matchedRule: nil,
+                        rememberChoice: .justThisTime
+                    ))
+                } label: {
+                    Label("Add", systemImage: "plus")
+                        .font(.cardLabel)
+                        .foregroundStyle(Color.brand)
+                }
+            }
+
+            ForEach(items.indices, id: \.self) { idx in
+                lineItemRow(idx: idx)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func lineItemRow(idx: Int) -> some View {
+        let nameBinding = Binding(
+            get: { items[idx].lineItem.displayName },
+            set: { newValue in
+                items[idx].lineItem.displayName = newValue
+                items[idx].lineItem.itemName = newValue
+                items[idx].lineItem.normalizedItemName = newValue
+                    .lowercased()
+                    .components(separatedBy: .whitespacesAndNewlines)
+                    .filter { !$0.isEmpty }
+                    .joined(separator: " ")
+                // Editing the name retires the AI cleanup badge for this row.
+                items[idx].wasAICleaned = false
+            }
+        )
+        let amountBinding = Binding(
+            get: { items[idx].lineItem.amount },
+            set: { items[idx].lineItem.amount = $0 }
+        )
+
+        VStack(spacing: 8) {
+            HStack(spacing: 8) {
+                statusDot(for: items[idx])
+
+                TextField("Item", text: nameBinding)
+                    .font(.cardTitle)
+                    .foregroundStyle(Color.text1)
+                    .textInputAutocapitalization(.words)
+
+                if items[idx].wasAICleaned {
+                    aiBadge(idx: idx)
+                }
+
+                Spacer(minLength: 8)
+
+                HStack(spacing: 2) {
+                    Text("$").foregroundStyle(Color.text2)
+                    TextField("0.00", value: amountBinding,
+                              format: .number.precision(.fractionLength(0...2)))
+                        .keyboardType(.decimalPad)
+                        .multilineTextAlignment(.trailing)
+                        .frame(width: 70)
+                }
+
+                Button {
+                    items.remove(at: idx)
+                } label: {
+                    Image(systemName: "minus.circle.fill")
+                        .foregroundStyle(Color.text3)
+                }
+            }
+
+            Button {
+                assigningItemID = items[idx].id
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "person.2.fill")
+                        .font(.caption)
+                    Text(assignmentSummary(for: items[idx]))
+                        .font(.caption)
+                    Spacer()
+                    Image(systemName: "chevron.right").font(.caption2)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.surface2, in: .capsule)
+                .foregroundStyle(Color.text2)
+            }
+        }
+        .padding(Spacing.cardPad)
+        .background(Color.surface, in: .rect(cornerRadius: Radius.card))
+    }
+
+    @ViewBuilder
+    private func statusDot(for item: ReviewItem) -> some View {
+        Circle()
+            .fill(item.matchedRule == nil ? Color.warn : Color.success)
+            .frame(width: 8, height: 8)
+            .accessibilityLabel(item.matchedRule == nil ? "New item" : "Known item")
+    }
+
+    /// Tappable "AI" pill on items the DeepSeek cleanup renamed. Tap to revert
+    /// to the parser's prettified version of the raw OCR.
+    @ViewBuilder
+    private func aiBadge(idx: Int) -> some View {
+        Button {
+            let raw = items[idx].lineItem.itemName
+            let reverted = ReceiptReviewView.prettifyFallback(raw)
+            items[idx].lineItem.displayName = reverted
+            items[idx].lineItem.normalizedItemName = reverted
+                .lowercased()
+                .components(separatedBy: .whitespacesAndNewlines)
+                .filter { !$0.isEmpty }
+                .joined(separator: " ")
+            items[idx].wasAICleaned = false
+        } label: {
+            HStack(spacing: 3) {
+                Image(systemName: "sparkles").font(.caption2)
+                Text("AI").font(.caption2.weight(.semibold))
+            }
+            .padding(.horizontal, 6)
+            .padding(.vertical, 3)
+            .background(Color.brandSoft, in: .capsule)
+            .foregroundStyle(Color.brand2)
+        }
+        .accessibilityLabel("Cleaned by AI, tap to revert")
+    }
+
+    private static func prettifyFallback(_ raw: String) -> String {
+        let lower = raw.lowercased()
+        return lower.split(separator: " ")
+            .map { $0.prefix(1).uppercased() + $0.dropFirst() }
+            .joined(separator: " ")
+    }
+
+    private func assignmentSummary(for item: ReviewItem) -> String {
+        if item.lineItem.assignedToUserIDs.isEmpty {
+            return "Shared by everyone"
+        }
+        let names = item.lineItem.assignedToUserIDs.compactMap { uuid in
+            members.first { $0.id == UserID(uuid) }?.displayName
+        }
+        return names.joined(separator: ", ")
+    }
+
+    private func loadInitial() {
+        if items.isEmpty {
+            items = draft.items
+            descriptionText = draft.merchant ?? ""
+        }
+    }
+
+    private func commit() async {
+        isWorking = true
+        defer { isWorking = false }
+        await onSave(items, category, descriptionText, date)
+    }
+}

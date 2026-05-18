@@ -1,0 +1,280 @@
+/* Splitway Design System — shared base styles */
+
+/* Newsreader — warm serif for italic headings (Georgia-flavored, more refined) */
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&display=swap');
+
+* { box-sizing: border-box; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, "SF Pro Text", "SF Pro Display", system-ui, sans-serif;
+  font-feature-settings: "ss01", "cv11";
+  background: #ece3d2;
+  color: #2a1d14;
+}
+
+/* Phone shell — tighter, more iOS-accurate than the stock starter */
+.phone {
+  width: 390px;
+  height: 844px;
+  border-radius: 54px;
+  position: relative;
+  overflow: hidden;
+  background: var(--bg, #f5ede0);
+  color: var(--text1, #2a1d14);
+  font-family: -apple-system, "SF Pro Text", system-ui, sans-serif;
+  isolation: isolate;
+}
+.phone.bezel {
+  padding: 11px;
+  background: #0c0905;
+  box-shadow:
+    0 0 0 1.5px #2a2018,
+    0 30px 60px -20px rgba(42,29,20,0.45),
+    0 12px 24px -10px rgba(42,29,20,0.3);
+}
+.phone.bezel > .screen {
+  width: 100%;
+  height: 100%;
+  border-radius: 44px;
+  overflow: hidden;
+  position: relative;
+  background: var(--bg, #f5ede0);
+  color: var(--text1, #2a1d14);
+}
+
+/* Dynamic island */
+.island {
+  position: absolute; top: 11px; left: 50%; transform: translateX(-50%);
+  width: 124px; height: 37px; border-radius: 22px; background: #000;
+  z-index: 100;
+}
+
+/* Home indicator */
+.home-ind {
+  position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+  width: 134px; height: 5px; border-radius: 100px;
+  background: var(--text1, #2a1d14); opacity: 0.85;
+  z-index: 60;
+}
+.phone[data-mode="dark"] .home-ind { background: #f5ede0; opacity: 0.7; }
+
+/* Status bar */
+.status-bar {
+  height: 54px;
+  padding: 19px 32px 0;
+  display: flex; justify-content: space-between; align-items: center;
+  font: 600 17px/22px -apple-system, "SF Pro Text", system-ui;
+  letter-spacing: -0.4px;
+  color: var(--text1, #2a1d14);
+  position: relative; z-index: 50;
+}
+.status-bar .right { display: flex; gap: 5px; align-items: center; }
+
+/* Content area below status bar */
+.content {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  padding-top: 54px;
+  overflow: hidden;
+  display: flex; flex-direction: column;
+}
+.scroll {
+  flex: 1; min-height: 0; overflow: auto;
+  scrollbar-width: none;
+}
+.scroll::-webkit-scrollbar { display: none; }
+
+/* Card primitive */
+.card {
+  background: var(--surface, #fdf8f0);
+  border-radius: 20px;
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(42,29,20,0.04));
+}
+
+/* Reusable surfaces */
+.surface { background: var(--surface, #fdf8f0); }
+.surface-2 { background: var(--surface2, #f0e8d8); }
+
+/* Tab bar */
+.tab-bar {
+  position: absolute; bottom: 28px; left: 12px; right: 12px;
+  background: var(--surface, #fdf8f0);
+  border-radius: 28px;
+  padding: 11px 8px 13px;
+  display: flex; justify-content: space-around;
+  box-shadow: var(--shadow-md, 0 4px 12px rgba(42,29,20,0.06));
+  z-index: 40;
+  backdrop-filter: blur(20px);
+}
+.phone[data-mode="dark"] .tab-bar {
+  background: rgba(38, 32, 26, 0.92);
+  box-shadow: 0 -1px 0 rgba(245,237,224,0.06), 0 8px 32px rgba(0,0,0,0.4);
+}
+.tab {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  flex: 1; min-width: 0; cursor: pointer;
+}
+.tab .label {
+  font-size: 10px; font-weight: 500; letter-spacing: 0.1px;
+  color: var(--text3, #c4b0a0);
+}
+.tab[data-active="true"] .label { color: var(--brand, #b88a5e); }
+.tab svg { color: var(--text3, #c4b0a0); }
+.tab[data-active="true"] svg { color: var(--brand, #b88a5e); }
+
+/* FAB */
+.fab {
+  position: absolute; bottom: 108px; right: 22px;
+  width: 58px; height: 58px; border-radius: 50%;
+  background: var(--cta, #2a1d14); color: var(--cta-text, #fdf8f0);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 8px 20px rgba(42,29,20,0.22), 0 2px 6px rgba(42,29,20,0.14);
+  cursor: pointer; z-index: 35;
+  transition: transform .1s ease;
+}
+.fab:active { transform: scale(0.94); }
+
+/* Typography */
+.serif { font-family: "Newsreader", Georgia, serif; }
+.serif-i { font-family: "Newsreader", Georgia, serif; font-style: italic; font-weight: 500; }
+
+.h-large {
+  font: 600 34px/40px -apple-system, system-ui;
+  letter-spacing: -0.6px;
+}
+.num-hero {
+  font: 500 44px/48px -apple-system, system-ui;
+  letter-spacing: -1.2px;
+  font-variant-numeric: tabular-nums;
+}
+.num {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.2px;
+}
+.eyebrow {
+  font: 600 11px/14px -apple-system, system-ui;
+  text-transform: uppercase; letter-spacing: 0.6px;
+  color: var(--text2, #8a7a6a);
+}
+
+/* Pill toggle */
+.pill-group {
+  background: var(--surface2, #f0e8d8);
+  border-radius: 100px; padding: 3px;
+  display: flex; gap: 2px;
+}
+.pill-group .pill {
+  flex: 1; text-align: center;
+  padding: 8px 0; font-size: 13px; font-weight: 500;
+  color: var(--text2, #8a7a6a); border-radius: 100px;
+  cursor: pointer; transition: all .15s;
+}
+.pill-group .pill[data-active="true"] {
+  background: var(--cta, #2a1d14);
+  color: var(--cta-text, #fdf8f0);
+  box-shadow: 0 1px 2px rgba(42,29,20,0.14);
+}
+.phone[data-mode="dark"] .pill-group .pill[data-active="true"] {
+  background: var(--surface3);
+  color: var(--text1);
+}
+
+/* Progress bar */
+.bar {
+  height: 5px; border-radius: 100px;
+  background: var(--surface2, #f0e8d8); overflow: hidden;
+}
+.bar > div { height: 100%; border-radius: 100px; background: var(--brand, #b88a5e); }
+
+/* Buttons */
+.btn-primary {
+  width: 100%; padding: 16px 20px;
+  background: var(--cta, #2a1d14); color: var(--cta-text, #fdf8f0);
+  border: none; border-radius: 100px;
+  font: 600 16px/20px -apple-system, system-ui;
+  letter-spacing: -0.2px; cursor: pointer;
+  transition: transform .08s, opacity .15s;
+}
+.btn-primary:active { transform: scale(0.985); }
+.btn-primary:disabled { opacity: 0.4; cursor: default; }
+
+.btn-secondary {
+  width: 100%; padding: 14px 20px;
+  background: transparent; color: var(--text1, #2a1d14);
+  border: 1.5px solid var(--border, rgba(42,29,20,0.08));
+  border-radius: 100px;
+  font: 600 16px/20px -apple-system, system-ui;
+  cursor: pointer;
+}
+
+.btn-ghost {
+  background: transparent; border: 0;
+  color: var(--brand, #b88a5e);
+  font: 500 14px/18px -apple-system, system-ui;
+  padding: 0; cursor: pointer;
+}
+
+/* Avatar */
+.avatar {
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font: 600 13px/1 -apple-system, system-ui;
+  letter-spacing: -0.2px; flex-shrink: 0;
+}
+
+/* Icon tile (used for category icons + section icons) */
+.icon-tile {
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.icon-tile.sm { width: 32px; height: 32px; border-radius: 9px; }
+.icon-tile.md { width: 40px; height: 40px; border-radius: 11px; }
+.icon-tile.lg { width: 48px; height: 48px; border-radius: 13px; }
+
+/* List row separator (iOS-style) */
+.row-sep {
+  height: 0.5px; background: var(--divider, rgba(42,29,20,0.06));
+  margin-left: 56px;
+}
+
+/* Inputs */
+.text-input {
+  width: 100%; background: transparent; border: 0; outline: 0;
+  padding: 0; font: 500 16px/22px -apple-system, system-ui;
+  color: var(--text1, #2a1d14); letter-spacing: -0.3px;
+}
+.text-input::placeholder { color: var(--text3, #c4b0a0); }
+
+/* Chip */
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 12px; border-radius: 100px;
+  background: var(--surface, #fdf8f0);
+  color: var(--text1, #2a1d14);
+  font: 500 13px/16px -apple-system, system-ui;
+  border: 0.5px solid var(--border, rgba(42,29,20,0.08));
+}
+.chip[data-active="true"] {
+  background: var(--brandSoft);
+  color: var(--brand2);
+  border-color: var(--brand);
+}
+
+/* Animated dot for "ready" status */
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); }
+
+/* Section header on canvas (outside phones) */
+.spec-card {
+  background: #fdf8f0;
+  border-radius: 18px;
+  padding: 24px;
+  font-family: -apple-system, system-ui;
+  color: #2a1d14;
+  border: 0.5px solid rgba(42,29,20,0.08);
+}
+.spec-card h3 { margin: 0 0 6px; font-size: 16px; font-weight: 600; letter-spacing: -0.2px; }
+.spec-card p { margin: 0; font-size: 13px; line-height: 1.5; color: #6a5a4a; }
+.spec-card code {
+  font-family: "SF Mono", "JetBrains Mono", Menlo, monospace;
+  font-size: 12px; background: #f0e8d8; padding: 1px 6px; border-radius: 4px;
+}

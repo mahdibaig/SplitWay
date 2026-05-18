@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Receipt Scan — Assignment Sheet</title>
+<link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css" rel="stylesheet">
+<style>
+body { margin: 0; padding: 32px 20px; background: #e8dcc8; font-family: -apple-system, BlinkMacSystemFont, sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+.page-title { text-align: center; color: #2a1d14; font-size: 18px; font-weight: 600; margin: 0 0 6px; }
+.page-subtitle { text-align: center; color: #8a7a6a; font-size: 13px; margin: 0 0 28px; max-width: 600px; }
+.phone-wrap { display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; }
+input { font-family: inherit; }
+button { cursor: pointer; font-family: inherit; }
+</style>
+</head>
+<body>
+<p class="page-title">Receipt Scan — Assignment Sheet</p>
+<p class="page-subtitle">Bottom sheet for assigning new items. Smart 'remember' default based on selection.</p>
+<div class="phone-wrap">
+<div style="width: 390px; background: #f5ede0; border-radius: 48px; padding: 12px; box-sizing: border-box; border: 8px solid #1a1a1a;">
+<div style="background: rgba(42, 29, 20, 0.4); border-radius: 36px; overflow: hidden; position: relative; min-height: 740px;">
+<div style="padding: 12px 24px 0; display: flex; justify-content: space-between; align-items: center; font-size: 15px; font-weight: 500; color: #2a1d14;">
+<span>9:41</span>
+<div style="display: flex; gap: 6px; align-items: center;">
+<i class="ti ti-signal-4g" style="font-size: 14px;"></i>
+<i class="ti ti-wifi" style="font-size: 14px;"></i>
+<i class="ti ti-battery-3" style="font-size: 16px;"></i>
+</div>
+</div>
+
+<div style="position: absolute; inset: 0; background: #f5ede0; opacity: 0.5;"></div>
+<div style="position: absolute; bottom: 0; left: 0; right: 0; background: #f5ede0; border-radius: 28px 28px 0 0; padding: 0; box-shadow: 0 -4px 20px rgba(0,0,0,0.1); min-height: 520px;">
+
+<div style="display: flex; justify-content: center; padding: 10px 0 0;">
+<div style="width: 36px; height: 4px; background: #c4b0a0; border-radius: 100px;"></div>
+</div>
+
+<div style="padding: 16px 22px 12px; text-align: center;">
+<p style="font-size: 11px; color: #8a7a6a; margin: 0; text-transform: uppercase; letter-spacing: 0.5px;">New item</p>
+<p style="font-size: 18px; color: #2a1d14; margin: 4px 0 2px; font-weight: 500;">Snickers</p>
+<p style="font-size: 13px; color: #8a7a6a; margin: 0;">$2.49 · who's this for?</p>
+</div>
+
+<div style="padding: 8px 22px;">
+<div style="background: #fdf8f0; border-radius: 16px; padding: 14px 16px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px;">
+<div style="width: 32px; height: 32px; border-radius: 8px; background: #e8dcc8; display: flex; align-items: center; justify-content: center;">
+<i class="ti ti-users" style="font-size: 16px; color: #b88a5e;"></i>
+</div>
+<div style="flex: 1;">
+<p style="font-size: 14px; margin: 0; color: #2a1d14; font-weight: 500;">Shared between all</p>
+<p style="font-size: 11px; margin: 1px 0 0; color: #8a7a6a;">Split among all members</p>
+</div>
+</div>
+
+<div style="background: #fdf8f0; border-radius: 16px; padding: 14px 16px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; border: 1.5px solid #b88a5e;">
+<div style="width: 32px; height: 32px; border-radius: 50%; background: #e5b8a8; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; color: #993556;">SA</div>
+<div style="flex: 1;">
+<p style="font-size: 14px; margin: 0; color: #2a1d14; font-weight: 500;">Just Sarah</p>
+<p style="font-size: 11px; margin: 1px 0 0; color: #8a7a6a;">Won't be split</p>
+</div>
+<i class="ti ti-check" style="font-size: 18px; color: #b88a5e;"></i>
+</div>
+<div style="background: #fdf8f0; border-radius: 16px; padding: 14px 16px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; ">
+<div style="width: 32px; height: 32px; border-radius: 50%; background: #c0d4b8; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; color: #3b6d11;">HA</div>
+<div style="flex: 1;">
+<p style="font-size: 14px; margin: 0; color: #2a1d14; font-weight: 500;">Just Hamza</p>
+<p style="font-size: 11px; margin: 1px 0 0; color: #8a7a6a;">Won't be split</p>
+</div>
+
+</div>
+<div style="background: #fdf8f0; border-radius: 16px; padding: 14px 16px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; ">
+<div style="width: 32px; height: 32px; border-radius: 50%; background: #d0c4d8; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; color: #534ab7;">AH</div>
+<div style="flex: 1;">
+<p style="font-size: 14px; margin: 0; color: #2a1d14; font-weight: 500;">Just Ahmad</p>
+<p style="font-size: 11px; margin: 1px 0 0; color: #8a7a6a;">Won't be split</p>
+</div>
+
+</div>
+<div style="background: #fdf8f0; border-radius: 16px; padding: 14px 16px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; ">
+<div style="width: 32px; height: 32px; border-radius: 50%; background: #e4c8c0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; color: #993c1d;">SU</div>
+<div style="flex: 1;">
+<p style="font-size: 14px; margin: 0; color: #2a1d14; font-weight: 500;">Just Sumaya</p>
+<p style="font-size: 11px; margin: 1px 0 0; color: #8a7a6a;">Won't be split</p>
+</div>
+
+</div>
+</div>
+
+<div style="padding: 12px 22px; background: #f0e8d8; margin: 8px 22px; border-radius: 12px;">
+<p style="font-size: 11px; color: #5a3d28; margin: 0 0 8px; font-weight: 500;">Remember for future receipts?</p>
+<div style="display: flex; flex-direction: column; gap: 6px;">
+<label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #5a3d28;">
+<input type="radio" name="remember" style="accent-color: #b88a5e;">
+<span>Always shared like this</span>
+</label>
+<label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #5a3d28;">
+<input type="radio" name="remember" checked style="accent-color: #b88a5e;">
+<span style="font-weight: 500;">Just this time</span>
+</label>
+<label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #5a3d28;">
+<input type="radio" name="remember" style="accent-color: #b88a5e;">
+<span>Always Sarah's</span>
+</label>
+</div>
+</div>
+
+<div style="padding: 12px 22px 20px;">
+<button style="width: 100%; background: #2a1d14; color: #fdf8f0; border: none; border-radius: 100px; padding: 13px; font-size: 14px; font-weight: 500;">Confirm</button>
+</div>
+</div>
+
+</div>
+</div>
+</div>
+</body>
+</html>

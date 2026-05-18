@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Splitway — Mockup Gallery</title>
+<style>
+* { box-sizing: border-box; }
+body { margin: 0; padding: 60px 24px; background: #f5ede0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; min-height: 100vh; }
+.container { max-width: 980px; margin: 0 auto; }
+.header { text-align: center; margin-bottom: 48px; }
+h1 { color: #2a1d14; font-size: 36px; margin: 0 0 8px; font-weight: 500; font-family: Georgia, serif; }
+.tagline { color: #8a7a6a; font-size: 16px; margin: 0; font-style: italic; }
+.section { margin-bottom: 48px; }
+h2 { color: #2a1d14; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 16px; font-weight: 600; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+.card { background: #fdf8f0; border-radius: 16px; padding: 20px; text-decoration: none; color: inherit; transition: transform 0.15s ease, box-shadow 0.15s ease; border: 0.5px solid #e8dcc8; display: block; }
+.card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(42, 29, 20, 0.08); }
+.card-number { color: #b88a5e; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; margin: 0 0 6px; }
+.card-title { color: #2a1d14; font-size: 16px; font-weight: 500; margin: 0 0 6px; }
+.card-desc { color: #8a7a6a; font-size: 13px; line-height: 1.5; margin: 0; }
+.footer { text-align: center; margin-top: 64px; padding-top: 32px; border-top: 1px solid #e8dcc8; color: #8a7a6a; font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header">
+<h1>Splitway Mockups</h1>
+<p class="tagline">17 designed screens · light mode v1</p>
+</div>
+
+<div class="section">
+<h2>Mascot</h2>
+<div class="grid">
+<a href="01_capybara_concepts.html" class="card">
+<p class="card-number">01</p>
+<p class="card-title">Capybara mascot concepts</p>
+<p class="card-desc">Three style directions. Direction B (warm rounded) was selected.</p>
+</a>
+</div>
+</div>
+
+<div class="section">
+<h2>Onboarding</h2>
+<div class="grid">
+<a href="13_onboarding_welcome.html" class="card">
+<p class="card-number">13</p>
+<p class="card-title">Welcome</p>
+<p class="card-desc">First screen. Capybara hero. Serif typography signals warmth.</p>
+</a>
+<a href="14_onboarding_name.html" class="card">
+<p class="card-number">14</p>
+<p class="card-title">Name your household</p>
+<p class="card-desc">Step 1 of 3. Pre-filled input + quick-pick chips.</p>
+</a>
+<a href="15_onboarding_groups.html" class="card">
+<p class="card-number">15</p>
+<p class="card-title">Set up groups</p>
+<p class="card-desc">Step 2 of 3. Optional groups for couples/families.</p>
+</a>
+<a href="16_onboarding_ai_consent.html" class="card">
+<p class="card-number">16</p>
+<p class="card-title">AI consent</p>
+<p class="card-desc">Step 3 of 3. Explicit opt-in with privacy guarantees.</p>
+</a>
+</div>
+</div>
+
+<div class="section">
+<h2>Main app</h2>
+<div class="grid">
+<a href="02_home_screen.html" class="card">
+<p class="card-number">02</p>
+<p class="card-title">Home</p>
+<p class="card-desc">Default screen. Glanceable household status, budgets, recent expenses.</p>
+</a>
+<a href="03_add_expense.html" class="card">
+<p class="card-number">03</p>
+<p class="card-title">Add Expense</p>
+<p class="card-desc">Amount-first form. All 5 split types surfaced. Paid-by tracking.</p>
+</a>
+<a href="04_category_picker.html" class="card">
+<p class="card-number">04</p>
+<p class="card-title">Category Picker</p>
+<p class="card-desc">Colored category tiles with inline budget context.</p>
+</a>
+<a href="10_expenses_tab.html" class="card">
+<p class="card-number">10</p>
+<p class="card-title">Expenses Tab</p>
+<p class="card-desc">"Who owes who" + filter pills + date-grouped list.</p>
+</a>
+<a href="11_settle_up.html" class="card">
+<p class="card-number">11</p>
+<p class="card-title">Settle Up</p>
+<p class="card-desc">Debt simplification with transparent math explanation.</p>
+</a>
+<a href="12_reports_tab.html" class="card">
+<p class="card-number">12</p>
+<p class="card-title">Reports Tab</p>
+<p class="card-desc">Month picker, pie chart, 6-month trend, top expenses.</p>
+</a>
+<a href="18_budgets.html" class="card">
+<p class="card-number">18</p>
+<p class="card-title">Budgets</p>
+<p class="card-desc">Hero summary + per-category progress with over-budget warnings.</p>
+</a>
+<a href="17_settings.html" class="card">
+<p class="card-number">17</p>
+<p class="card-title">Settings</p>
+<p class="card-desc">Grouped sections with inline status values.</p>
+</a>
+</div>
+</div>
+
+<div class="section">
+<h2>Receipt scanning</h2>
+<div class="grid">
+<a href="05_receipt_scan_camera.html" class="card">
+<p class="card-number">05</p>
+<p class="card-title">Camera</p>
+<p class="card-desc">Dark mode camera with brand orange frame guides.</p>
+</a>
+<a href="06_receipt_review.html" class="card">
+<p class="card-number">06</p>
+<p class="card-title">Review items</p>
+<p class="card-desc">Recognition banner. Green = known, orange = needs assignment.</p>
+</a>
+<a href="07_assignment_sheet.html" class="card">
+<p class="card-number">07</p>
+<p class="card-title">Assignment sheet</p>
+<p class="card-desc">Smart "remember" defaults based on selection type.</p>
+</a>
+</div>
+</div>
+
+<div class="section">
+<h2>AI Assistant</h2>
+<div class="grid">
+<a href="08_assistant_empty.html" class="card">
+<p class="card-number">08</p>
+<p class="card-title">Empty state</p>
+<p class="card-desc">Capybara hero with suggested questions as shortcuts.</p>
+</a>
+<a href="09_assistant_conversation.html" class="card">
+<p class="card-number">09</p>
+<p class="card-title">Conversation</p>
+<p class="card-desc">Claude-backed chat. Numbers bolded. Structured data when clearer.</p>
+</a>
+</div>
+</div>
+
+<div class="footer">
+Open any mockup in your browser. Designed for ~390px iPhone viewport.
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Splitway — Design System</title>
+<link rel="stylesheet" href="styles.css" />
+<style>
+  html, body { height: 100%; margin: 0; background: #ece3d2; overflow: hidden; }
+  #root { position: fixed; inset: 0; }
+</style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <script src="tokens.js"></script>
+  <script type="text/babel" src="design-canvas.jsx"></script>
+  <script type="text/babel" src="chrome.jsx"></script>
+  <script type="text/babel" src="phone-mascot.jsx"></script>
+  <script type="text/babel" src="screens-1.jsx"></script>
+  <script type="text/babel" src="screens-2.jsx"></script>
+
+  <script type="text/babel" data-presets="env,react">
+    const {
+      DesignCanvas, DCSection, DCArtboard,
+      ScreenWelcome, ScreenName, ScreenGroups, ScreenAIConsent,
+      ScreenHome, ScreenExpenses, ScreenSettle, ScreenReports, ScreenBudgets, ScreenSettings,
+      ScreenAddExpense, ScreenCategory, ScreenReceiptCamera, ScreenReceiptReview, ScreenAssignmentSheet,
+      ScreenAssistantEmpty, ScreenAssistantChat,
+      Capybara, CapybaraStates, AppIcon, AppIconSheet, EmptyStatesSheet,
+    } = window;
+
+    // Phone artboard dims (matches .phone.bezel)
+    const PW = 412, PH = 866;
+    const ph = (id, label, Screen, mode) => (
+      <DCArtboard id={id} label={label} width={PW} height={PH}>
+        <Screen mode={mode} />
+      </DCArtboard>
+    );
+
+    function App() {
+      return (
+        <DesignCanvas title="Splitway" subtitle="iOS handoff · v1.0">
+          {/* ───── SECTION: Design system reference ───── */}
+          <DCSection id="ds" title="Design system">
+            <DCArtboard id="ds-mascot" label="Capybara mascot — 3 states" width={760} height={680}>
+              <CapybaraStates mode="light" />
+            </DCArtboard>
+            <DCArtboard id="ds-icon" label="App icon" width={760} height={520}>
+              <AppIconSheet mode="light" />
+            </DCArtboard>
+            <DCArtboard id="ds-empties" label="Illustrated empty states" width={760} height={620}>
+              <EmptyStatesSheet mode="light" />
+            </DCArtboard>
+            <DCArtboard id="ds-tokens" label="Color tokens" width={760} height={680}>
+              <TokenSheet />
+            </DCArtboard>
+          </DCSection>
+
+          {/* ───── SECTION: Onboarding ───── */}
+          <DCSection id="onb" title="Onboarding · Light">
+            {ph('on-welcome',  '01 Welcome',       ScreenWelcome,   'light')}
+            {ph('on-name',     '02 Name household', ScreenName,     'light')}
+            {ph('on-groups',   '03 Groups setup',   ScreenGroups,   'light')}
+            {ph('on-ai',       '04 AI consent',     ScreenAIConsent,'light')}
+          </DCSection>
+
+          {/* ───── SECTION: Core tabs ───── */}
+          <DCSection id="core" title="Core tabs · Light">
+            {ph('home-l',     '05 Home',           ScreenHome,     'light')}
+            {ph('expenses-l', '06 Expenses',       ScreenExpenses, 'light')}
+            {ph('reports-l',  '07 Reports',        ScreenReports,  'light')}
+            {ph('budgets-l',  '08 Budgets',        ScreenBudgets,  'light')}
+            {ph('settings-l', '09 Settings',       ScreenSettings, 'light')}
+          </DCSection>
+
+          {/* ───── SECTION: Add expense + receipts ───── */}
+          <DCSection id="add" title="Add expense & receipts · Light">
+            {ph('add-l',     '10 Add expense',     ScreenAddExpense,    'light')}
+            {ph('cat-l',     '11 Category picker', ScreenCategory,      'light')}
+            {ph('settle-l',  '12 Settle up',       ScreenSettle,        'light')}
+            {ph('cam-l',     '13 Receipt camera',  ScreenReceiptCamera, 'light')}
+            {ph('review-l',  '14 Receipt review',  ScreenReceiptReview, 'light')}
+            {ph('assign-l',  '15 Assignment sheet',ScreenAssignmentSheet,'light')}
+          </DCSection>
+
+          {/* ───── SECTION: Assistant ───── */}
+          <DCSection id="ai" title="Assistant · Light">
+            {ph('ai-empty-l', '16 Assistant empty', ScreenAssistantEmpty, 'light')}
+            {ph('ai-chat-l',  '17 Assistant chat',  ScreenAssistantChat,  'light')}
+          </DCSection>
+
+          {/* ───── SECTION: Dark mode — all 17 ───── */}
+          <DCSection id="dark-onb" title="Onboarding · Dark">
+            {ph('on-welcome-d', '01 Welcome',       ScreenWelcome,   'dark')}
+            {ph('on-name-d',    '02 Name',          ScreenName,      'dark')}
+            {ph('on-groups-d',  '03 Groups',        ScreenGroups,    'dark')}
+            {ph('on-ai-d',      '04 AI consent',    ScreenAIConsent, 'dark')}
+          </DCSection>
+
+          <DCSection id="dark-core" title="Core tabs · Dark">
+            {ph('home-d',     '05 Home',           ScreenHome,      'dark')}
+            {ph('expenses-d', '06 Expenses',       ScreenExpenses,  'dark')}
+            {ph('reports-d',  '07 Reports',        ScreenReports,   'dark')}
+            {ph('budgets-d',  '08 Budgets',        ScreenBudgets,   'dark')}
+            {ph('settings-d', '09 Settings',       ScreenSettings,  'dark')}
+          </DCSection>
+
+          <DCSection id="dark-add" title="Add expense & receipts · Dark">
+            {ph('add-d',     '10 Add expense',      ScreenAddExpense,     'dark')}
+            {ph('cat-d',     '11 Category picker',  ScreenCategory,       'dark')}
+            {ph('settle-d',  '12 Settle up',        ScreenSettle,         'dark')}
+            {ph('cam-d',     '13 Receipt camera',   ScreenReceiptCamera,  'dark')}
+            {ph('review-d',  '14 Receipt review',   ScreenReceiptReview,  'dark')}
+            {ph('assign-d',  '15 Assignment sheet', ScreenAssignmentSheet,'dark')}
+          </DCSection>
+
+          <DCSection id="dark-ai" title="Assistant · Dark">
+            {ph('ai-empty-d', '16 Assistant empty', ScreenAssistantEmpty, 'dark')}
+            {ph('ai-chat-d',  '17 Assistant chat',  ScreenAssistantChat,  'dark')}
+          </DCSection>
+
+          {/* Dark counterparts of design system */}
+          <DCSection id="ds-dark" title="Design system · Dark">
+            <DCArtboard id="ds-mascot-d" label="Capybara — dark" width={760} height={680}>
+              <CapybaraStates mode="dark" />
+            </DCArtboard>
+            <DCArtboard id="ds-empties-d" label="Empty states — dark" width={760} height={620}>
+              <EmptyStatesSheet mode="dark" />
+            </DCArtboard>
+          </DCSection>
+
+          {/* Handoff */}
+          <DCSection id="handoff" title="Claude Code handoff">
+            <DCArtboard id="handoff-card" label="Implementation notes" width={780} height={1320}>
+              <HandoffSheet />
+            </DCArtboard>
+          </DCSection>
+        </DesignCanvas>
+      );
+    }
+
+    // ───── Color token sheet ─────
+    function TokenSheet() {
+      const Swatch = ({ name, val, label, dark, fg = '#2a1d14' }) => (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', background: '#fdf8f0', borderRadius: 10, border: '0.5px solid rgba(42,29,20,0.08)' }}>
+          <div style={{ width: 36, height: 36, borderRadius: 8, background: val, border: '0.5px solid rgba(42,29,20,0.08)' }} />
+          <div>
+            <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: fg }}>{name}</p>
+            <p style={{ margin: 0, fontSize: 11, fontFamily: 'SF Mono, monospace', color: '#6a5a4a' }}>{val}</p>
+            <p style={{ margin: 0, fontSize: 10.5, color: '#8a7a6a' }}>{label}</p>
+          </div>
+        </div>
+      );
+      const L = window.LIGHT, D = window.DARK;
+      return (
+        <div style={{ width: 760, padding: 32, background: '#f5ede0', color: '#2a1d14', borderRadius: 24, fontFamily: '-apple-system, system-ui' }}>
+          <p style={{ margin: 0, fontSize: 13, color: '#8a7a6a', letterSpacing: 0.4, textTransform: 'uppercase', fontWeight: 600 }}>Tokens</p>
+          <h2 style={{ margin: '4px 0 16px', fontSize: 28, letterSpacing: -0.6, fontWeight: 600 }}>Color system</h2>
+
+          <p style={{ margin: '8px 0 8px', fontSize: 14, fontWeight: 600 }}>Light</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+            <Swatch name="Background" val={L.bg} label=".bgPrimary" />
+            <Swatch name="Surface" val={L.surface} label="cards / sheets" />
+            <Swatch name="Surface 2" val={L.surface2} label="subtle fills" />
+            <Swatch name="Text primary" val={L.text1} label="body / numbers" />
+            <Swatch name="Text secondary" val={L.text2} label="labels / meta" />
+            <Swatch name="Text tertiary" val={L.text3} label="hints / dividers" />
+            <Swatch name="Brand" val={L.brand} label="accents · icons" />
+            <Swatch name="Brand 2" val={L.brand2} label="hero card · headings" />
+            <Swatch name="Warn" val={L.warn} label="overspend · negatives" />
+            <Swatch name="Success" val={L.success} label="settled · positive" />
+          </div>
+
+          <p style={{ margin: '20px 0 8px', fontSize: 14, fontWeight: 600 }}>Dark — warm, never gray</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+            <Swatch name="Background" val={D.bg} label=".bgPrimary" />
+            <Swatch name="Surface" val={D.surface} label="cards / sheets" />
+            <Swatch name="Surface 2" val={D.surface2} label="subtle fills" />
+            <Swatch name="Text primary" val={D.text1} label="body / numbers" />
+            <Swatch name="Brand" val={D.brand} label="lifted on dark" />
+            <Swatch name="Success" val={D.success} label="settled · positive" />
+          </div>
+
+          <p style={{ margin: '20px 0 8px', fontSize: 14, fontWeight: 600 }}>Type</p>
+          <div style={{ background: '#fdf8f0', borderRadius: 14, padding: 18, border: '0.5px solid rgba(42,29,20,0.08)' }}>
+            <p className="serif" style={{ margin: 0, fontSize: 36, fontWeight: 600, letterSpacing: -0.7 }}>Newsreader · Serif</p>
+            <p className="serif-i" style={{ margin: '2px 0 12px', fontSize: 22, color: '#8a7a6a' }}>"Welcome to …" · italic accents only</p>
+            <p style={{ margin: 0, fontSize: 28, fontWeight: 600, letterSpacing: -0.5 }}>SF Pro Display · UI</p>
+            <p style={{ margin: '2px 0 0', fontSize: 14, color: '#8a7a6a' }}>Body 15 · Caption 11 · Numbers tabular</p>
+          </div>
+        </div>
+      );
+    }
+
+    // ───── Handoff spec ─────
+    function HandoffSheet() {
+      const Sec = ({ t, children }) => (
+        <div style={{ marginBottom: 22 }}>
+          <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', color: '#8a7a6a' }}>{t}</p>
+          {children}
+        </div>
+      );
+      const C = ({ children }) => <code style={{ fontFamily: 'SF Mono, monospace', fontSize: 12.5, background: '#f0e8d8', padding: '1px 6px', borderRadius: 4 }}>{children}</code>;
+      const P = (props) => <p {...props} style={{ margin: '0 0 6px', fontSize: 13.5, lineHeight: 1.55, ...(props.style||{}) }} />;
+      return (
+        <div style={{ width: 780, padding: 36, background: '#fdf8f0', color: '#2a1d14', borderRadius: 24, fontFamily: '-apple-system, system-ui' }}>
+          <p style={{ margin: 0, fontSize: 13, color: '#8a7a6a', letterSpacing: 0.4, textTransform: 'uppercase', fontWeight: 600 }}>Handoff</p>
+          <h2 style={{ margin: '4px 0 4px', fontSize: 30, letterSpacing: -0.6, fontWeight: 600 }}>SwiftUI implementation notes</h2>
+          <p style={{ margin: '0 0 22px', fontSize: 14, color: '#6a5a4a', lineHeight: 1.5 }}>
+            Drop these into Claude Code as-is. iOS 17+, SwiftUI, no external deps.
+          </p>
+
+          <Sec t="Foundation">
+            <P>Add a <C>Theme.swift</C> with two <C>struct ColorTokens</C> instances (light, dark) — exact hex codes are in the Color tokens artboard. Wrap with <C>@Environment(\.colorScheme)</C> resolver. Use <C>SF Pro</C> for UI (system default) and <C>Newsreader</C> from Google Fonts bundled as a <C>.ttf</C> for serif accents (welcome screen, "The simplest way", hero italics on tab headers).</P>
+            <P>Number formatting: <C>.monospacedDigit()</C> on every <C>$X.XX</C> Text view. Currency formatter scoped to user locale via <C>.currency(code: Locale.current.currency?.identifier ?? "USD")</C>.</P>
+          </Sec>
+
+          <Sec t="Components → SwiftUI">
+            <P><C>Card</C>: <C>RoundedRectangle(cornerRadius: 16-20)</C> · <C>.fill(Color.surface)</C> · <C>.shadow(color: .black.opacity(0.04), radius: 2, y: 1)</C>. Use 20 for hero cards, 16 for list cards, 14 for inline tiles.</P>
+            <P><C>IconTile</C>: 32/40/48 sq · radius 9/11/13 · category bg + 12% darker fg. Map to SF Symbols: <C>cart.fill</C>, <C>fork.knife</C>, <C>house.fill</C>, <C>bolt.fill</C>, <C>car.fill</C>, <C>play.tv.fill</C>, <C>heart.fill</C>, <C>bag.fill</C>, <C>sparkles</C>, <C>ellipsis</C>.</P>
+            <P><C>TabBar</C>: custom — floating <C>RoundedRectangle(28)</C>, 5 tabs. Capybara tab uses a custom <C>Image</C> (export <C>capybara-glyph.svg</C> at 24/48/72). Other tabs use SF Symbols (<C>house</C>, <C>list.bullet.rectangle</C>, <C>chart.pie</C>, <C>gearshape</C>).</P>
+            <P><C>FAB</C>: 58sq circle · brand2 fill on light / brand on dark · <C>plus</C> SF symbol · <C>.scaleEffect</C> 0.94 on press. Bottom inset = tab bar height + 22.</P>
+            <P><C>Pill</C> button: <C>Capsule()</C>, 16pt padding. Primary: <C>Color.cta</C> fill, <C>cta-text</C> fg. Secondary: 1.5px stroke <C>border</C>.</P>
+            <P><C>PillGroup</C> (split-type selector): segmented Capsule with 3pt inset, animated <C>.matchedGeometryEffect</C> on the active pill background.</P>
+          </Sec>
+
+          <Sec t="Interaction states">
+            <P><b>Press:</b> all tappable surfaces — <C>.scaleEffect(isPressed ? 0.985 : 1)</C> · 0.08s spring · haptic <C>.light</C> on confirm actions, <C>.success</C> on settled.</P>
+            <P><b>Disabled:</b> 40% opacity on primary CTA + ignore taps. Receipt review's "Continue" is disabled until all <C>new</C> items are assigned.</P>
+            <P><b>Hover</b> isn't iOS but iPad pointer: 4% white overlay on <C>Card</C>.</P>
+          </Sec>
+
+          <Sec t="Capybara mascot">
+            <P>Export the 3 SVGs (<C>capy-idle</C>, <C>capy-thinking</C>, <C>capy-responding</C>) from the design system artboard. Bundle as Vector PDFs in Assets.xcassets so they tint via SwiftUI. Animations are SwiftUI-native:</P>
+            <P>· <b>Breath:</b> <C>.scaleEffect(y: 1.03)</C> · <C>.animation(.easeInOut(duration: 3.5).repeatForever())</C>.</P>
+            <P>· <b>Blink (thinking):</b> swap to dash-eye variant, <C>.repeatForever()</C> over 1.4s.</P>
+            <P>· <b>Speak (responding):</b> two small swirls fade in/out over 1.6s — use the streamed token boundary as the visual cue.</P>
+            <P>Tab-bar glyph is a separate file — face only, no orange. Tint with <C>tab.isSelected ? .brand : .text3</C>.</P>
+          </Sec>
+
+          <Sec t="Data wiring (per MASTER_SPEC)">
+            <P>Home hero card pulls from <C>MonthSummary</C> view model: <C>total</C>, <C>delta</C> vs previous, <C>userBalance</C>. Budget pills are top-2 categories by spend.</P>
+            <P>Settle Up shows the netted graph from <C>SettlementEngine.simplify()</C>. Two payments in mockups assumes 4-person household; render N-1 max.</P>
+            <P>Receipt review banner copy: <C>{'"I recognized \\(n) items"'}</C> only when n &gt; 0. New items must be assigned before Continue enables. Assignment sheet "Remember" persists to <C>ItemMemory</C> (3 modes: never, always X, ask each time).</P>
+          </Sec>
+
+          <Sec t="Dark mode">
+            <P>Use system <C>@Environment(\.colorScheme)</C>. The dark palette is warm brown — never substitute system grays. Hero "brand2" card on light becomes <C>surface2</C> in dark (already darker than bg). FABs and CTAs invert: light uses dark <C>cta</C>, dark uses cream <C>cta</C> with dark text.</P>
+          </Sec>
+
+          <Sec t="Files to export">
+            <P>· <C>capy-idle.svg</C>, <C>capy-thinking.svg</C>, <C>capy-responding.svg</C> (200×220 viewBox)</P>
+            <P>· <C>capy-glyph.svg</C> (24×24, face only)</P>
+            <P>· <C>app-icon-1024.png</C> rendered from <C>AppIcon</C> at 1024sq + 18 size derivatives via Xcode</P>
+            <P>· <C>empty-*.svg</C> (4 files, 200×180)</P>
+          </Sec>
+
+          <Sec t="Accessibility">
+            <P>All numeric labels marked <C>.accessibilityLabel("$\(amount, format: .currency)")</C>. Capybara is <C>.accessibilityHidden(true)</C> — decorative. Color-only states (settled green / over-budget orange) carry an icon (<C>checkmark</C> / <C>exclamationmark.triangle</C>) so they're not color-only.</P>
+            <P>Dynamic Type: tested through XL. Cards use <C>VStack</C> not fixed heights. Numbers stay tabular at all sizes.</P>
+          </Sec>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

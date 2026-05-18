@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Add Expense</title>
+<link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css" rel="stylesheet">
+<style>
+body { margin: 0; padding: 32px 20px; background: #e8dcc8; font-family: -apple-system, BlinkMacSystemFont, sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+.page-title { text-align: center; color: #2a1d14; font-size: 18px; font-weight: 600; margin: 0 0 6px; }
+.page-subtitle { text-align: center; color: #8a7a6a; font-size: 13px; margin: 0 0 28px; max-width: 600px; }
+.phone-wrap { display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; }
+input { font-family: inherit; }
+button { cursor: pointer; font-family: inherit; }
+</style>
+</head>
+<body>
+<p class="page-title">Add Expense</p>
+<p class="page-subtitle">The most-used screen after Home. Amount-first, smart splits, paid-by tracking.</p>
+<div class="phone-wrap">
+<div style="width: 390px; background: #f5ede0; border-radius: 48px; padding: 12px; box-sizing: border-box; border: 8px solid #1a1a1a;">
+<div style="background: #f5ede0; border-radius: 36px; overflow: hidden; position: relative; min-height: 740px;">
+<div style="padding: 12px 24px 0; display: flex; justify-content: space-between; align-items: center; font-size: 15px; font-weight: 500; color: #2a1d14;">
+<span>9:41</span>
+<div style="display: flex; gap: 6px; align-items: center;">
+<i class="ti ti-signal-4g" style="font-size: 14px;"></i>
+<i class="ti ti-wifi" style="font-size: 14px;"></i>
+<i class="ti ti-battery-3" style="font-size: 16px;"></i>
+</div>
+</div>
+
+<div style="padding: 18px 22px 12px; display: flex; justify-content: space-between; align-items: center;">
+<i class="ti ti-x" style="font-size: 22px; color: #2a1d14;"></i>
+<p style="font-size: 16px; font-weight: 500; color: #2a1d14; margin: 0;">New expense</p>
+<i class="ti ti-camera" style="font-size: 22px; color: #b88a5e;"></i>
+</div>
+
+<div style="padding: 24px 22px 16px; text-align: center;">
+<p style="font-size: 12px; color: #8a7a6a; margin: 0; text-transform: uppercase; letter-spacing: 0.5px;">Amount</p>
+<p style="font-size: 48px; color: #2a1d14; margin: 8px 0 0; font-weight: 500; letter-spacing: -1px;">
+<span style="color: #c4b0a0; font-size: 32px;">$</span>127.40
+</p>
+</div>
+
+<div style="margin: 8px 22px 14px; background: #fdf8f0; border-radius: 16px; padding: 14px 16px;">
+<div style="display: flex; align-items: center; gap: 12px;">
+<div style="width: 36px; height: 36px; border-radius: 10px; background: #f0e0c8; display: flex; align-items: center; justify-content: center;">
+<i class="ti ti-shopping-cart" style="font-size: 18px; color: #b88a5e;"></i>
+</div>
+<div style="flex: 1;">
+<p style="font-size: 11px; margin: 0; color: #8a7a6a;">Category</p>
+<p style="font-size: 14px; margin: 1px 0 0; color: #2a1d14; font-weight: 500;">Groceries</p>
+</div>
+<i class="ti ti-chevron-right" style="font-size: 18px; color: #c4b0a0;"></i>
+</div>
+</div>
+
+<div style="margin: 0 22px 14px; background: #fdf8f0; border-radius: 16px; padding: 14px 16px;">
+<input type="text" value="H-E-B groceries" style="width: 100%; border: none; background: transparent; font-size: 14px; color: #2a1d14; font-weight: 500; padding: 0; outline: none;"/>
+<p style="font-size: 11px; margin: 2px 0 0; color: #8a7a6a;">Description</p>
+</div>
+
+<div style="margin: 0 22px 14px; background: #fdf8f0; border-radius: 16px; padding: 14px 16px;">
+<div style="display: flex; align-items: center; gap: 12px;">
+<i class="ti ti-calendar" style="font-size: 18px; color: #b88a5e;"></i>
+<div style="flex: 1;">
+<p style="font-size: 11px; margin: 0; color: #8a7a6a;">Date</p>
+<p style="font-size: 14px; margin: 1px 0 0; color: #2a1d14; font-weight: 500;">Today, Nov 10</p>
+</div>
+<i class="ti ti-chevron-right" style="font-size: 18px; color: #c4b0a0;"></i>
+</div>
+</div>
+
+<div style="margin: 0 22px 14px; background: #fdf8f0; border-radius: 16px; padding: 16px;">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+<p style="font-size: 13px; color: #8a7a6a; margin: 0; font-weight: 500;">Split</p>
+<span style="font-size: 12px; color: #b88a5e; font-weight: 500;">Customize</span>
+</div>
+
+<div style="display: flex; gap: 4px; margin-bottom: 14px; background: #f0e8d8; border-radius: 100px; padding: 3px;">
+<div style="flex: 1; background: #2a1d14; color: #fdf8f0; padding: 7px 0; border-radius: 100px; text-align: center; font-size: 11px; font-weight: 500;">Equal</div>
+<div style="flex: 1; padding: 7px 0; text-align: center; font-size: 11px; color: #8a7a6a; font-weight: 500;">%</div>
+<div style="flex: 1; padding: 7px 0; text-align: center; font-size: 11px; color: #8a7a6a; font-weight: 500;">Amount</div>
+<div style="flex: 1; padding: 7px 0; text-align: center; font-size: 11px; color: #8a7a6a; font-weight: 500;">Shares</div>
+</div>
+
+<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+<div style="width: 28px; height: 28px; border-radius: 50%; background: #e5b8a8; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; color: #993556;">MF</div>
+<div style="flex: 1;">
+<p style="font-size: 13px; margin: 0; color: #2a1d14; font-weight: 500;">Mahmoud family</p>
+<p style="font-size: 10px; margin: 1px 0 0; color: #8a7a6a;">Hamza, Sarah</p>
+</div>
+<p style="font-size: 14px; margin: 0; color: #2a1d14; font-weight: 500;">$63.70</p>
+</div>
+
+<div style="display: flex; align-items: center; gap: 10px;">
+<div style="width: 28px; height: 28px; border-radius: 50%; background: #c0d4b8; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; color: #3b6d11;">HF</div>
+<div style="flex: 1;">
+<p style="font-size: 13px; margin: 0; color: #2a1d14; font-weight: 500;">Hassan family</p>
+<p style="font-size: 10px; margin: 1px 0 0; color: #8a7a6a;">Ahmad, Sumaya</p>
+</div>
+<p style="font-size: 14px; margin: 0; color: #2a1d14; font-weight: 500;">$63.70</p>
+</div>
+</div>
+
+<div style="margin: 0 22px 14px; background: #fdf8f0; border-radius: 16px; padding: 14px 16px;">
+<div style="display: flex; align-items: center; gap: 12px;">
+<i class="ti ti-wallet" style="font-size: 18px; color: #b88a5e;"></i>
+<div style="flex: 1;">
+<p style="font-size: 11px; margin: 0; color: #8a7a6a;">Paid by</p>
+<p style="font-size: 14px; margin: 1px 0 0; color: #2a1d14; font-weight: 500;">Sarah</p>
+</div>
+<i class="ti ti-chevron-right" style="font-size: 18px; color: #c4b0a0;"></i>
+</div>
+</div>
+
+<div style="padding: 8px 22px 20px;">
+<button style="width: 100%; background: #2a1d14; color: #fdf8f0; border: none; border-radius: 100px; padding: 16px; font-size: 15px; font-weight: 500;">Save expense</button>
+</div>
+
+</div>
+</div>
+</div>
+</body>
+</html>

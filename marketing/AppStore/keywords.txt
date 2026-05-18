@@ -1,0 +1,20 @@
+# App Store Keywords (100 character limit, comma-separated, no spaces after commas)
+# Apple does NOT count words already in the app name or category, so "splitway" and "expense" can stay out.
+
+split,household,roommate,couple,family,receipt,bill,budget,share,money,scan,settle,ai,iou
+
+# 84 characters. Buffer left for ASO testing additions.
+
+# Rationale per term:
+# split, share, settle    : core action vocabulary
+# household, roommate, couple, family : positioning vs Splitwise (which lacks couples/family)
+# receipt, scan           : smart-receipt differentiator
+# bill                    : recurring bills / utilities
+# budget                  : Phase 3 feature, often searched
+# money, ai               : broad reach, AI is trendy in 2026
+# iou                     : Splitwise migration searchers use this term
+
+# Avoid:
+# - "splitwise" (Apple bans competitor names)
+# - "venmo" / "zelle" (payment networks, off-topic)
+# - "free" (Apple bans price claims in keywords)
