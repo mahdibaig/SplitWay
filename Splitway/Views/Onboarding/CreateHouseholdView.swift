@@ -81,6 +81,6 @@ struct CreateHouseholdView: View {
         .padding(.top, 48)
         .padding(.bottom, 24)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(Color.bg.ignoresSafeArea())
+        .background(Color.onboardingBg.ignoresSafeArea())
     }
 }

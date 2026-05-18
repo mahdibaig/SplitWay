@@ -16,6 +16,11 @@ extension Color {
 
     // Surfaces
     static let bg        = adaptive(light: 0xf5ede0, dark: 0x000000)
+    /// Fixed warm tan used only by the onboarding flow so it matches the
+    /// baked-in background of the onboarding video (no seam). Not adaptive:
+    /// the video is the same tan regardless of appearance, and onboarding is
+    /// locked to a light color scheme so text stays readable on it.
+    static let onboardingBg = Color(hex: 0xE0B690)
     // Dark surfaces are near-black warm tiers (Apple-style elevation on a
     // true-black base): each step is just light enough to read as a layer.
     static let surface   = adaptive(light: 0xfdf8f0, dark: 0x161210)

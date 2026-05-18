@@ -59,7 +59,8 @@ struct AssistantConsentView: View {
             .padding(.horizontal, Spacing.screenH)
             .padding(.bottom, 24)
         }
-        .background(Color.bg.ignoresSafeArea())
+        .background(Color.onboardingBg.ignoresSafeArea())
+        .environment(\.colorScheme, .light)
     }
 
     private var bulletCard: some View {

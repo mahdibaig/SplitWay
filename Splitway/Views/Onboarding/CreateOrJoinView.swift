@@ -35,7 +35,7 @@ struct CreateOrJoinView: View {
         .padding(.horizontal, Spacing.screenH)
         .padding(.top, 48)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(Color.bg.ignoresSafeArea())
+        .background(Color.onboardingBg.ignoresSafeArea())
     }
 
     @ViewBuilder

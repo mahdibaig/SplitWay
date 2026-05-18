@@ -18,10 +18,13 @@ struct OnboardingFlow: View {
             if let viewModel = vm.viewModel {
                 content(viewModel: viewModel)
             } else {
-                Color.bg.ignoresSafeArea()
+                Color.onboardingBg.ignoresSafeArea()
             }
         }
         .onAppear { vm.attach(householdService: householdService) }
+        // Onboarding is always the tan/light experience (matches the video),
+        // regardless of the app-wide appearance setting, so text stays readable.
+        .environment(\.colorScheme, .light)
     }
 
     @ViewBuilder

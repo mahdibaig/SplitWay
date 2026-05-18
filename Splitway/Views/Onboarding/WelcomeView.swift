@@ -53,10 +53,10 @@ struct WelcomeView: View {
             .padding(.top, 24)
             .padding(.bottom, 24)
             .frame(maxWidth: .infinity)
-            .background(Color.bg)
+            .background(Color.onboardingBg)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.bg.ignoresSafeArea())
+        .background(Color.onboardingBg.ignoresSafeArea())
     }
 }
 

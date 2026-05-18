@@ -50,7 +50,7 @@ struct DisplayNameView: View {
             .padding(.top, 48)
             .padding(.bottom, 24)
         }
-        .background(Color.bg.ignoresSafeArea())
+        .background(Color.onboardingBg.ignoresSafeArea())
         .onChange(of: photoItem) { _, newItem in
             Task { await loadPickedPhoto(newItem) }
         }
