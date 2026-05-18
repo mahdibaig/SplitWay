@@ -12,10 +12,11 @@ struct WelcomeView: View {
             // bundled clip is somehow missing.
             if let url = Bundle.main.url(forResource: "onboarding", withExtension: "mp4") {
                 IntroVideoView(url: url)
-                    .frame(height: 300)
+                    .frame(height: 420)
+                    .frame(maxWidth: .infinity)
                     .accessibilityHidden(true)
             } else {
-                CapybaraPlaceholder(size: 220)
+                CapybaraPlaceholder(size: 260)
             }
 
             VStack(spacing: 8) {
