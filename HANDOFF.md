@@ -188,7 +188,7 @@ P0 / P1 task below.**
 
 ### 3.2 App Store readiness
 
-- **Replace the default Xcode app icon.**
+- [x] **Replace the default Xcode app icon.** Done 2026-05-18. Capybara-with-receipt icon installed at 1024x1024, no alpha, in AppIcon.appiconset. Follow-up polish: source has pre-rounded corners with cream margin; an edge-to-edge version would be cleaner for App Store final.
 
   - Acceptance: 1024×1024 icon with capybara, cream + brown palette, no
     transparency, no rounded corners (iOS adds them).
