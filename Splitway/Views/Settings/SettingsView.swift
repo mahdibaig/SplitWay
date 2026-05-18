@@ -67,6 +67,9 @@ struct SettingsView: View {
                     NavigationLink("Import from Splitwise") {
                         ProGate(feature: .csvImportExport) { SplitwiseImportView() }
                     }
+                    NavigationLink("Export to CSV") {
+                        ProGate(feature: .csvImportExport) { CSVExportView() }
+                    }
                 }
 
                 Section("Preferences") {

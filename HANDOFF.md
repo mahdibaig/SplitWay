@@ -557,6 +557,8 @@ Cashew-style \"pay once\" crowd with the lifetime SKU.
 
   [x] **Splitwise import tool.** Done 2026-05-17. SplitwiseImportService parses the CSV, maps categories, best-effort matches members to current household, shows preview with match status, commits as equal-split expenses with reconstructed paidBy. UI under Settings → Money → Import from Splitwise. Non-equal Splitwise splits become equal in Splitway (documented caveat).
 
+  [x] **CSV export.** Done 2026-05-18 (the Pro "CSV export" matrix row). ExpenseExportService writes one row per expense with each member's resolved share as its own column; Settings → Money → Export to CSV, ProGate-wrapped, ShareLink to the system share sheet.
+
   - Acceptance: Settings → Import from Splitwise. User exports their
     Splitwise CSV, picks the file, Splitway parses it into expenses +
     members + groups. Show a preview before committing.

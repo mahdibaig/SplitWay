@@ -37,6 +37,7 @@ final class ServiceContainer: ObservableObject {
     let receiptCleanupService: ReceiptCleanupService
     let receiptRetentionService: ReceiptRetentionService
     let splitwiseImportService: SplitwiseImportService
+    let expenseExportService: ExpenseExportService
     let subscriptionService: SubscriptionService
 
     init(persistence: PersistenceController, accounts: CloudKitAccountService) {
@@ -137,6 +138,12 @@ final class ServiceContainer: ObservableObject {
             householdService: householdService,
             membersService: membersService,
             expenseService: expenseService
+        )
+
+        self.expenseExportService = ExpenseExportService(
+            expenseService: expenseService,
+            membersService: membersService,
+            householdService: householdService
         )
 
         self.subscriptionService = SubscriptionService()
