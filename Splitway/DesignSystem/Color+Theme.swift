@@ -14,18 +14,20 @@ extension Color {
         })
     }
 
-    // Surfaces
-    static let bg        = adaptive(light: 0xf5ede0, dark: 0x000000)
-    /// Fixed warm tan used only by the onboarding flow so it matches the
-    /// baked-in background of the onboarding video (no seam). Not adaptive:
-    /// the video is the same tan regardless of appearance, and onboarding is
+    // Surfaces. Light theme is a bright near-white canvas with pure-white
+    // cards so it flows continuously out of the white onboarding (no warm
+    // cream jump). Warmth lives in text/brand, not the chrome.
+    static let bg        = adaptive(light: 0xf7f6f3, dark: 0x000000)
+    /// Fixed near-white used only by the onboarding flow so it matches the
+    /// sampled background of the onboarding video (no seam). Not adaptive:
+    /// the video is the same regardless of appearance, and onboarding is
     /// locked to a light color scheme so text stays readable on it.
     static let onboardingBg = Color(hex: 0xFCFDFD)
     // Dark surfaces are near-black warm tiers (Apple-style elevation on a
     // true-black base): each step is just light enough to read as a layer.
-    static let surface   = adaptive(light: 0xfdf8f0, dark: 0x161210)
-    static let surface2  = adaptive(light: 0xf0e8d8, dark: 0x201a15)
-    static let surface3  = adaptive(light: 0xe8dcc8, dark: 0x2b231b)
+    static let surface   = adaptive(light: 0xffffff, dark: 0x161210)
+    static let surface2  = adaptive(light: 0xefede8, dark: 0x201a15)
+    static let surface3  = adaptive(light: 0xe6e3dc, dark: 0x2b231b)
 
     // Text
     static let text1 = adaptive(light: 0x2a1d14, dark: 0xf5ede0)
@@ -35,13 +37,13 @@ extension Color {
     // Brand
     static let brand      = adaptive(light: 0xb88a5e, dark: 0xd4a878)
     static let brand2     = adaptive(light: 0x8a6a4a, dark: 0xb88a5e)
-    static let brandSoft  = adaptive(light: 0xf0e0c8, dark: 0x2a1f15)
+    static let brandSoft  = adaptive(light: 0xf3e8d7, dark: 0x2a1f15)
 
     // Semantic
     static let warn       = adaptive(light: 0xd4824a, dark: 0xe89968)
-    static let warnSoft   = adaptive(light: 0xf5d8c2, dark: 0x2e1e14)
+    static let warnSoft   = adaptive(light: 0xfae5d7, dark: 0x2e1e14)
     static let success    = adaptive(light: 0x5a7d3e, dark: 0x8aab68)
-    static let successSoft = adaptive(light: 0xdfe9d0, dark: 0x1c2614)
+    static let successSoft = adaptive(light: 0xe6efdb, dark: 0x1c2614)
 
     // CTA
     static let cta     = adaptive(light: 0x2a1d14, dark: 0xf5ede0)
