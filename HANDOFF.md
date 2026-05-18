@@ -349,7 +349,7 @@ P0 / P1 task below.**
 These are the specific UX failures from Splitwise\'s own feedback portal
 that Splitway should beat.
 
-- **Quantity-per-person on a single line item.**
+- [x] **Quantity-per-person on a single line item.** Done 2026-05-18. LineItem.quantityPerUser; long-press a line in review > "Split by quantity" sheet with per-member steppers, live per-person amounts. Cost split proportionally to units. Beats Splitwise.
 
   - Example: Alice had 2 beers, Bob had 1. Splitwise cannot do this.
     Splitway should.
@@ -361,14 +361,14 @@ that Splitway should beat.
   - Touch: ReceiptReviewView + LineItemModel (add quantityPerMember:
     \[MemberID: Int\]).
 
-  **Edit a single line item in place.**
+  [x] **Edit a single line item in place.** Done (already shipped). Review screen has inline editable name + amount per line, add/remove rows, per-item assignment and quantity, no delete-and-re-add.
 
   - Acceptance: tap a line, edit name/price/assignment without deleting
     and re-adding. Save returns to the review screen.
 
   - Touch: ReceiptReviewView. No data-model changes needed.
 
-  **Photo-gallery upload for receipts.**
+  [x] **Photo-gallery upload for receipts.** Done (already shipped). ReceiptScanFlow uses PhotosPicker. (Splitwise refused this for 6 years.)
 
   - Acceptance: from Add Expense → Scan Receipt, the user picks either
     Camera or Photos. Splitwise has refused to ship this for 6 years.

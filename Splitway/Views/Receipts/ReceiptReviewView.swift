@@ -15,6 +15,7 @@ struct ReceiptReviewView: View {
     @State private var descriptionText: String = ""
     @State private var date: Date = Date()
     @State private var assigningItemID: UUID?
+    @State private var quantityItemID: UUID?
     @State private var showCategoryPicker = false
     @State private var isWorking = false
 
@@ -55,6 +56,20 @@ struct ReceiptReviewView: View {
                         items[idx].lineItem.assignedToUserIDs = Array(newAssignment)
                         items[idx].rememberChoice = newRemember
                         assigningItemID = nil
+                    }
+                )
+            }
+        }
+        .sheet(item: $quantityItemID) { id in
+            if let idx = items.firstIndex(where: { $0.id == id }) {
+                LineItemQuantitySheet(
+                    itemName: items[idx].lineItem.displayName,
+                    amount: items[idx].lineItem.amount,
+                    members: members,
+                    quantityPerUser: items[idx].lineItem.quantityPerUser ?? [:],
+                    onSave: { newMap in
+                        items[idx].lineItem.quantityPerUser = newMap.isEmpty ? nil : newMap
+                        quantityItemID = nil
                     }
                 )
             }
@@ -289,6 +304,20 @@ struct ReceiptReviewView: View {
         }
         .padding(Spacing.cardPad)
         .background(Color.surface, in: .rect(cornerRadius: Radius.card))
+        .contextMenu {
+            Button {
+                quantityItemID = items[idx].id
+            } label: {
+                Label("Split by quantity", systemImage: "number")
+            }
+            if items[idx].lineItem.quantityPerUser?.isEmpty == false {
+                Button(role: .destructive) {
+                    items[idx].lineItem.quantityPerUser = nil
+                } label: {
+                    Label("Clear quantity split", systemImage: "arrow.uturn.backward")
+                }
+            }
+        }
     }
 
     @ViewBuilder
@@ -334,6 +363,16 @@ struct ReceiptReviewView: View {
     }
 
     private func assignmentSummary(for item: ReviewItem) -> String {
+        if let qpu = item.lineItem.quantityPerUser, !qpu.isEmpty {
+            let parts = qpu.compactMap { (uid, units) -> String? in
+                guard units > 0,
+                      let uuid = UUID(uuidString: uid),
+                      let name = members.first(where: { $0.id == UserID(uuid) })?.displayName
+                else { return nil }
+                return "\(name) \(units)"
+            }
+            return "By quantity: " + parts.sorted().joined(separator: ", ")
+        }
         if item.lineItem.assignedToUserIDs.isEmpty {
             return "Shared by everyone"
         }

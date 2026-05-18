@@ -96,9 +96,22 @@ final class ReceiptScanService: ObservableObject {
         let activeIDs = activeMembers.filter { !$0.isArchived }.map(\.id)
         let lineItems = items.map(\.lineItem)
 
-        // Per-user share = sum across items they're on of (item amount / N assignees)
+        // Per-user share. If an item has per-person quantities, split it
+        // proportionally to units (Alice 2 beers, Bob 1 -> 2:1). Otherwise
+        // split equally among assignees (or all active members).
         var shareByUser: [UserID: Decimal] = [:]
         for item in lineItems {
+            if let qpu = item.quantityPerUser, !qpu.isEmpty {
+                let totalUnits = qpu.values.reduce(0, +)
+                if totalUnits > 0 {
+                    for (uidString, units) in qpu where units > 0 {
+                        guard let uuid = UUID(uuidString: uidString) else { continue }
+                        let share = item.amount * Decimal(units) / Decimal(totalUnits)
+                        shareByUser[UserID(uuid), default: 0] += share
+                    }
+                    continue
+                }
+            }
             let assignees: [UserID]
             if item.assignedToUserIDs.isEmpty {
                 assignees = activeIDs
