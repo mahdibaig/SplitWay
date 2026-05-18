@@ -26,6 +26,7 @@ targets:
           - "**/.DS_Store"
     resources:
       - path: Splitway/Resources/Assets.xcassets
+      - path: Splitway/Resources/onboarding.mp4
       - path: Splitway/Models/CoreData/Splitway.xcdatamodeld
     info:
       path: Splitway/Info.plist
