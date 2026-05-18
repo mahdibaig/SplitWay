@@ -16,9 +16,11 @@ extension Color {
 
     // Surfaces
     static let bg        = adaptive(light: 0xf5ede0, dark: 0x000000)
-    static let surface   = adaptive(light: 0xfdf8f0, dark: 0x26201a)
-    static let surface2  = adaptive(light: 0xf0e8d8, dark: 0x322a22)
-    static let surface3  = adaptive(light: 0xe8dcc8, dark: 0x3d342a)
+    // Dark surfaces are near-black warm tiers (Apple-style elevation on a
+    // true-black base): each step is just light enough to read as a layer.
+    static let surface   = adaptive(light: 0xfdf8f0, dark: 0x161210)
+    static let surface2  = adaptive(light: 0xf0e8d8, dark: 0x201a15)
+    static let surface3  = adaptive(light: 0xe8dcc8, dark: 0x2b231b)
 
     // Text
     static let text1 = adaptive(light: 0x2a1d14, dark: 0xf5ede0)
@@ -28,13 +30,13 @@ extension Color {
     // Brand
     static let brand      = adaptive(light: 0xb88a5e, dark: 0xd4a878)
     static let brand2     = adaptive(light: 0x8a6a4a, dark: 0xb88a5e)
-    static let brandSoft  = adaptive(light: 0xf0e0c8, dark: 0x3d2f22)
+    static let brandSoft  = adaptive(light: 0xf0e0c8, dark: 0x2a1f15)
 
     // Semantic
     static let warn       = adaptive(light: 0xd4824a, dark: 0xe89968)
-    static let warnSoft   = adaptive(light: 0xf5d8c2, dark: 0x3d2a20)
+    static let warnSoft   = adaptive(light: 0xf5d8c2, dark: 0x2e1e14)
     static let success    = adaptive(light: 0x5a7d3e, dark: 0x8aab68)
-    static let successSoft = adaptive(light: 0xdfe9d0, dark: 0x2a3320)
+    static let successSoft = adaptive(light: 0xdfe9d0, dark: 0x1c2614)
 
     // CTA
     static let cta     = adaptive(light: 0x2a1d14, dark: 0xf5ede0)
