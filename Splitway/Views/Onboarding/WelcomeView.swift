@@ -5,14 +5,13 @@ struct WelcomeView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Hero: the mascot clip fills the entire top region, edge to edge,
-            // and holds on its final frame. The clip's own (black) background
-            // becomes the top region's backdrop, which blends seamlessly in
-            // dark mode (app bg is now black).
+            // Hero: the mascot clip is shown whole (aspect-fit, no crop) and
+            // holds on its final frame. The clip's white background is the
+            // same white as the screen, so the fit margins are invisible and
+            // the capybara reads as floating on the page. No seam, no chop.
             if let url = Bundle.main.url(forResource: "onboarding", withExtension: "mp4") {
-                IntroVideoView(url: url, gravity: .resizeAspectFill)
+                IntroVideoView(url: url, gravity: .resizeAspect)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .clipped()
                     .accessibilityHidden(true)
             } else {
                 CapybaraPlaceholder(size: 260)
