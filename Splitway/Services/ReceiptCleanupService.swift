@@ -1,7 +1,8 @@
 import Foundation
 
 /// Calls DeepSeek to expand abbreviated receipt item names ("WHL MLK GAL" to
-/// "Whole milk gallon"). Per HANDOFF.md P0/3.3:
+/// "Whole milk gallon") AND categorize each line into one of the 10 fixed
+/// Splitway categories. Per HANDOFF.md P0/3.3:
 ///   - One batched call per scan (all uncached items in a single prompt).
 ///   - Local cache by normalized raw name so repeated items skip the API.
 ///   - Gated by the same assistant opt-in as the chat tab.
@@ -10,22 +11,26 @@ final class ReceiptCleanupService: ObservableObject {
 
     private let preferences: AssistantPreferences
     private var client = DeepSeekClient()
-    private var cache: [String: String]
 
-    private static let cacheKey = "receiptCleanupCache.v1"
+    /// Cached LLM result per normalized raw name.
+    private struct Cached: Codable { let cleaned: String; let category: String? }
+    private var cache: [String: Cached]
+
+    private static let cacheKey = "receiptCleanupCache.v2"
 
     init(preferences: AssistantPreferences) {
         self.preferences = preferences
         if let data = UserDefaults.standard.data(forKey: Self.cacheKey),
-           let decoded = try? JSONDecoder().decode([String: String].self, from: data) {
+           let decoded = try? JSONDecoder().decode([String: Cached].self, from: data) {
             self.cache = decoded
         } else {
             self.cache = [:]
         }
     }
 
-    /// Returns the items with `displayName` enriched and a parallel `cleanedIDs`
-    /// set indicating which line items got their name rewritten by the LLM.
+    /// Returns the items with `displayName` enriched, `category` filled where
+    /// the LLM had a confident guess, and a parallel `cleanedIDs` set listing
+    /// the line items the LLM renamed (so the UI can offer revert).
     func cleanup(items: [LineItem]) async -> (items: [LineItem], cleanedIDs: Set<UUID>) {
         var result = items
         var cleanedIDs: Set<UUID> = []
@@ -33,16 +38,19 @@ final class ReceiptCleanupService: ObservableObject {
         guard preferences.isConfigured else { return (result, cleanedIDs) }
         guard !items.isEmpty else { return (result, cleanedIDs) }
 
-        // Look up cache first, build the uncached batch for the API call.
         struct Pending { let idx: Int; let rawName: String; let normKey: String }
         var pending: [Pending] = []
 
+        // Cache hits short-circuit the API call.
         for (idx, item) in items.enumerated() {
             let normalized = Self.normalize(item.itemName)
-            if let cached = cache[normalized], !cached.isEmpty {
-                if cached != result[idx].displayName {
-                    result[idx].displayName = cached
+            if let cached = cache[normalized] {
+                if !cached.cleaned.isEmpty, cached.cleaned != result[idx].displayName {
+                    result[idx].displayName = cached.cleaned
                     cleanedIDs.insert(result[idx].id)
+                }
+                if let raw = cached.category, let cat = ExpenseCategory(rawValue: raw) {
+                    result[idx].category = cat
                 }
             } else if !item.itemName.trimmingCharacters(in: .whitespaces).isEmpty {
                 pending.append(Pending(idx: idx, rawName: item.itemName, normKey: normalized))
@@ -54,41 +62,43 @@ final class ReceiptCleanupService: ObservableObject {
         client.model = preferences.model
 
         do {
-            let cleanedNames = try await callDeepSeek(rawNames: pending.map(\.rawName))
-            guard cleanedNames.count == pending.count else {
-                AppLog.lifecycle.error("Cleanup count mismatch: got \(cleanedNames.count, privacy: .public), expected \(pending.count, privacy: .public)")
+            let cleaned = try await callDeepSeek(rawNames: pending.map(\.rawName))
+            guard cleaned.count == pending.count else {
+                AppLog.lifecycle.error("Cleanup count mismatch: got \(cleaned.count, privacy: .public), expected \(pending.count, privacy: .public)")
                 return (result, cleanedIDs)
             }
 
             for (i, entry) in pending.enumerated() {
-                let cleaned = cleanedNames[i].trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !cleaned.isEmpty else { continue }
-                if cleaned != result[entry.idx].displayName {
-                    result[entry.idx].displayName = cleaned
+                let name = cleaned[i].name.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !name.isEmpty else { continue }
+                if name != result[entry.idx].displayName {
+                    result[entry.idx].displayName = name
                     cleanedIDs.insert(result[entry.idx].id)
                 }
-                cache[entry.normKey] = cleaned
+                if let category = cleaned[i].category {
+                    result[entry.idx].category = category
+                }
+                cache[entry.normKey] = Cached(
+                    cleaned: name,
+                    category: cleaned[i].category?.rawValue
+                )
             }
             persistCache()
         } catch {
-            // Cleanup failures should never break a scan. Just log and return originals.
             AppLog.lifecycle.error("Receipt cleanup failed: \(error.localizedDescription, privacy: .public)")
         }
 
         return (result, cleanedIDs)
     }
 
-    /// User tapped the "AI" badge to revert. We don't poison the cache; we
-    /// just hand back what the parser's prettifier would have produced.
+    /// Mirror of LineItemParser.prettify for the "tap AI badge to revert" path.
     func prettifyFallback(for rawItemName: String) -> String {
-        // Mirror LineItemParser.prettify so caller gets the pre-cleanup display.
         let lower = rawItemName.lowercased()
         return lower.split(separator: " ")
             .map { $0.prefix(1).uppercased() + $0.dropFirst() }
             .joined(separator: " ")
     }
 
-    /// Wipe the cache. Reset app data calls this to keep cleanup state in sync.
     func resetCache() {
         cache.removeAll()
         UserDefaults.standard.removeObject(forKey: Self.cacheKey)
@@ -96,23 +106,32 @@ final class ReceiptCleanupService: ObservableObject {
 
     // MARK: - Internals
 
-    private func callDeepSeek(rawNames: [String]) async throws -> [String] {
+    private struct Cleaned { let name: String; let category: ExpenseCategory? }
+
+    private func callDeepSeek(rawNames: [String]) async throws -> [Cleaned] {
         let numbered = rawNames.enumerated()
             .map { "\($0.offset + 1). \($0.element)" }
             .joined(separator: "\n")
 
+        let categoryList = ExpenseCategory.allCases.map(\.rawValue).joined(separator: ", ")
         let system = """
-        You normalize abbreviated grocery and retail receipt item names. \
-        Convert each raw OCR string into a clear human-readable item name. \
-        Rules:
+        You normalize abbreviated grocery and retail receipt item names AND \
+        categorize each into one of these exact category strings: \(categoryList).
+        Rules for the name field:
         - Keep it brief: 1 to 4 words.
         - Do not invent details that aren't in the raw text.
         - If the raw text is already a clean name, return it unchanged.
-        - Preserve quantity hints (gal, oz, lb) when they're in the raw text.
-        - Plain text only. No markdown, no asterisks, no dashes.
+        - Preserve quantity hints (gal, oz, lb) when in the raw text.
+        - Plain text only, no markdown, no asterisks, no dashes.
+        Rules for the category field:
+        - Use one of the exact strings above, lowercase, no quotes.
+        - If unsure, return "other".
 
-        Return a single JSON array of strings in the SAME ORDER as the input. \
-        No prose, no code fences, no keys. Example: ["Whole milk gallon", "Bananas"]
+        Return a single JSON array in the SAME ORDER as the input. Each \
+        element MUST be an object: {"name": "...", "category": "..."}. \
+        No prose, no code fences, no other keys. Example:
+        [{"name": "Whole milk gallon", "category": "groceries"}, \
+        {"name": "Bananas", "category": "groceries"}]
         """
 
         let response = try await client.complete(
@@ -123,7 +142,7 @@ final class ReceiptCleanupService: ObservableObject {
             apiKey: preferences.apiKey
         )
 
-        return try Self.parseJSONArray(response, expectedCount: rawNames.count)
+        return try Self.parseCleanedArray(response, expectedCount: rawNames.count)
     }
 
     private func persistCache() {
@@ -139,23 +158,18 @@ final class ReceiptCleanupService: ObservableObject {
             .joined(separator: " ")
     }
 
-    /// Strips code fences and pulls the first JSON array of strings out of the
-    /// response. LLMs sometimes wrap output in ```json fences despite being asked not to.
-    static func parseJSONArray(_ raw: String, expectedCount: Int) throws -> [String] {
+    /// Strips code fences and pulls the JSON array out of the response.
+    /// Tolerates either an array of strings (legacy) or array of objects.
+    private static func parseCleanedArray(_ raw: String, expectedCount: Int) throws -> [Cleaned] {
         var text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        // Strip code fences if present.
         if text.hasPrefix("```") {
             if let firstNewline = text.firstIndex(of: "\n") {
                 text = String(text[text.index(after: firstNewline)...])
             }
-            if text.hasSuffix("```") {
-                text = String(text.dropLast(3))
-            }
+            if text.hasSuffix("```") { text = String(text.dropLast(3)) }
             text = text.trimmingCharacters(in: .whitespacesAndNewlines)
         }
 
-        // Find the first '[' and last ']'.
         guard
             let openIdx = text.firstIndex(of: "["),
             let closeIdx = text.lastIndex(of: "]")
@@ -163,17 +177,25 @@ final class ReceiptCleanupService: ObservableObject {
             throw NSError(domain: "ReceiptCleanup", code: 1,
                           userInfo: [NSLocalizedDescriptionKey: "No JSON array in response"])
         }
-
-        let jsonSubstring = String(text[openIdx...closeIdx])
-        guard let data = jsonSubstring.data(using: .utf8) else {
+        let json = String(text[openIdx...closeIdx])
+        guard let data = json.data(using: .utf8) else {
             throw NSError(domain: "ReceiptCleanup", code: 2,
                           userInfo: [NSLocalizedDescriptionKey: "Couldn't encode JSON"])
         }
 
-        let array = try JSONDecoder().decode([String].self, from: data)
-        if array.count != expectedCount {
-            AppLog.lifecycle.error("Cleanup expected \(expectedCount, privacy: .public) but parsed \(array.count, privacy: .public)")
+        // Try objects first; fall back to strings if the model regressed.
+        struct Obj: Decodable { let name: String?; let category: String? }
+        if let arr = try? JSONDecoder().decode([Obj].self, from: data) {
+            return arr.map { entry in
+                let name = entry.name ?? ""
+                let cat = entry.category.flatMap { ExpenseCategory(rawValue: $0.lowercased()) }
+                return Cleaned(name: name, category: cat)
+            }
         }
-        return array
+        let strings = try JSONDecoder().decode([String].self, from: data)
+        if strings.count != expectedCount {
+            AppLog.lifecycle.error("Cleanup expected \(expectedCount, privacy: .public) but parsed \(strings.count, privacy: .public)")
+        }
+        return strings.map { Cleaned(name: $0, category: nil) }
     }
 }

@@ -6,6 +6,11 @@ import PhotosUI
 ///   2. Processing: Vision OCR + parser run.
 ///   3. Review: edit/assign line items, save as a real Expense.
 struct ReceiptScanFlow: View {
+    /// Called after the receipt's expense is successfully saved. The parent
+    /// (Add Expense sheet) uses this to dismiss itself so the user lands back
+    /// on the originating tab instead of an empty Add Expense form.
+    var onDidSaveExpense: (() -> Void)? = nil
+
     @EnvironmentObject private var receiptScanService: ReceiptScanService
     @EnvironmentObject private var membersService: MembersService
     @EnvironmentObject private var expenseService: ExpenseService
@@ -153,6 +158,9 @@ struct ReceiptScanFlow: View {
             )
             await expenseService.refresh()
             dismiss()
+            // Tell the parent (Add Expense sheet) we're done so it can close
+            // too and the user lands back on the originating tab.
+            onDidSaveExpense?()
         } catch {
             errorMessage = error.localizedDescription
         }

@@ -386,6 +386,15 @@ struct ReceiptReviewView: View {
         if items.isEmpty {
             items = draft.items
             descriptionText = draft.merchant ?? ""
+            // Pre-select the expense category from the most common line-item
+            // category the AI tagged. User can still override on the card.
+            let cats = items.compactMap { $0.lineItem.category }
+            if !cats.isEmpty {
+                let counts = Dictionary(grouping: cats, by: { $0 }).mapValues(\.count)
+                if let best = counts.max(by: { $0.value < $1.value })?.key {
+                    category = best
+                }
+            }
         }
     }
 

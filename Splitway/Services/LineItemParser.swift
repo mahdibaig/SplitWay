@@ -15,42 +15,113 @@ enum LineItemParser {
     static func parse(lines: [OCRLine]) -> ParsedReceipt {
         var items: [LineItem] = []
         var total: Decimal?
-        var merchant: String?
+        let merchant = guessMerchant(lines)
 
-        // First non-empty line that's mostly letters is a decent merchant guess.
-        if let firstAlpha = lines.first(where: { isMostlyAlpha($0.text) }) {
-            merchant = firstAlpha.text.trimmingCharacters(in: .whitespaces)
-        }
+        // Track the most recent alpha-only "candidate name" so we can pair it
+        // with a price-only line that follows (handles column-layout receipts
+        // where OCR returns the item name and the price on separate lines).
+        var pendingName: String?
 
         for line in lines {
-            let text = line.text
+            let text = line.text.trimmingCharacters(in: .whitespaces)
+            guard !text.isEmpty else { continue }
 
-            // "TOTAL" line wins over item parsing.
+            // TOTAL line wins over item parsing.
             if let totalAmount = matchTotal(text) {
                 total = totalAmount
+                pendingName = nil
                 continue
             }
 
-            // Skip noise: subtotal, tax, tender, change, card numbers, etc.
-            if shouldIgnore(text) { continue }
+            // Skip noise.
+            if shouldIgnore(text) { pendingName = nil; continue }
 
-            guard let (name, amount) = matchItemAndPrice(text) else { continue }
-            let cleaned = name.trimmingCharacters(in: .whitespaces)
-            guard !cleaned.isEmpty else { continue }
+            // Lines containing 2+ prices are almost always totals/headers/junk
+            // on real receipts (payment-details rows, multi-column summaries).
+            // Drop them rather than letting the regex pick the last price.
+            if priceCount(in: text) >= 2 { pendingName = nil; continue }
 
-            items.append(LineItem(
-                id: UUID(),
-                itemName: cleaned,
-                displayName: prettify(cleaned),
-                normalizedItemName: normalize(cleaned),
-                amount: amount,
-                quantity: 1,
-                assignedToUserIDs: [],
-                category: nil
-            ))
+            // Same-line "item ... $price" match.
+            if let (name, amount) = matchItemAndPrice(text) {
+                let cleaned = name.trimmingCharacters(in: .whitespaces)
+                if !cleaned.isEmpty, looksLikeItemName(cleaned) {
+                    items.append(makeLineItem(name: cleaned, amount: amount))
+                    pendingName = nil
+                    continue
+                }
+            }
+
+            // Price-only line: pair with the last alpha line we saw.
+            if let priceOnly = matchPriceOnly(text), let name = pendingName,
+               looksLikeItemName(name) {
+                items.append(makeLineItem(name: name, amount: priceOnly))
+                pendingName = nil
+                continue
+            }
+
+            // Alpha-ish line with no price: stash as a candidate name.
+            if looksLikeItemName(text) {
+                pendingName = text
+            } else {
+                pendingName = nil
+            }
         }
 
         return ParsedReceipt(merchant: merchant, items: items, total: total)
+    }
+
+    private static func makeLineItem(name: String, amount: Decimal) -> LineItem {
+        LineItem(
+            id: UUID(),
+            itemName: name,
+            displayName: prettify(name),
+            normalizedItemName: normalize(name),
+            amount: amount,
+            quantity: 1,
+            assignedToUserIDs: [],
+            category: nil
+        )
+    }
+
+    /// Conservative merchant guess: short, mostly alpha, no digits / colons.
+    /// Returns nil rather than dumping noisy lines into the description.
+    private static func guessMerchant(_ lines: [OCRLine]) -> String? {
+        for line in lines.prefix(8) {
+            let s = line.text.trimmingCharacters(in: .whitespaces)
+            guard !s.isEmpty, s.count <= 30 else { continue }
+            if s.contains(where: { $0.isNumber || $0 == ":" }) { continue }
+            let letters = s.filter { $0.isLetter }.count
+            guard Double(letters) / Double(s.count) >= 0.7 else { continue }
+            return s
+        }
+        return nil
+    }
+
+    private static func priceCount(in text: String) -> Int {
+        let pattern = try! NSRegularExpression(pattern: #"\$?\d+\.\d{2}"#)
+        return pattern.numberOfMatches(in: text, range: NSRange(text.startIndex..., in: text))
+    }
+
+    /// Filters out lines that look like totals, dates, or pure numbers.
+    private static func looksLikeItemName(_ text: String) -> Bool {
+        let trimmed = text.trimmingCharacters(in: .whitespaces)
+        guard trimmed.count >= 2 else { return false }
+        let letters = trimmed.filter { $0.isLetter }.count
+        return Double(letters) / Double(trimmed.count) >= 0.35
+    }
+
+    private static let priceOnlyRegex: NSRegularExpression = {
+        try! NSRegularExpression(pattern: #"^\$?(\d+\.\d{2})\s*$"#)
+    }()
+
+    private static func matchPriceOnly(_ text: String) -> Decimal? {
+        let range = NSRange(text.startIndex..., in: text)
+        guard
+            let match = priceOnlyRegex.firstMatch(in: text, range: range),
+            match.numberOfRanges == 2,
+            let r = Range(match.range(at: 1), in: text)
+        else { return nil }
+        return Decimal(string: String(text[r]))
     }
 
     // MARK: - Regex / heuristics
@@ -113,13 +184,6 @@ enum LineItemParser {
     private static func shouldIgnore(_ text: String) -> Bool {
         let range = NSRange(text.startIndex..., in: text)
         return ignorePatterns.contains { $0.firstMatch(in: text, range: range) != nil }
-    }
-
-    private static func isMostlyAlpha(_ text: String) -> Bool {
-        let trimmed = text.trimmingCharacters(in: .whitespaces)
-        guard trimmed.count >= 3 else { return false }
-        let alpha = trimmed.filter { $0.isLetter }
-        return Double(alpha.count) / Double(trimmed.count) > 0.6
     }
 
     private static func prettify(_ raw: String) -> String {

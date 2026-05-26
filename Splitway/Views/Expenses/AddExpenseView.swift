@@ -115,7 +115,11 @@ private struct AddExpenseForm: View {
             }
         }
         .fullScreenCover(isPresented: $showReceiptScan) {
-            ReceiptScanFlow()
+            ReceiptScanFlow(onDidSaveExpense: {
+                // The receipt flow saved its own expense; close the Add
+                // Expense sheet too so the user lands back on the prior tab.
+                dismiss()
+            })
         }
         .sheet(isPresented: $showPaywall) {
             PaywallView(feature: .receiptOCR)
