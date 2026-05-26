@@ -1,0 +1,24 @@
+name = "splitway-assistant"
+main = "worker.js"
+compatibility_date = "2026-05-01"
+
+# Secrets are NOT stored in this file. Set them with:
+#   wrangler secret put DEEPSEEK_API_KEY
+#   wrangler secret put APP_SHARED_SECRET
+#
+# Optional rate limit. Create the namespace with:
+#   wrangler kv namespace create RATE_LIMIT_KV
+# Then paste the printed id below and uncomment.
+# [[kv_namespaces]]
+# binding = "RATE_LIMIT_KV"
+# id = "<paste from wrangler output>"
+
+# Optional override for the per-IP daily request cap (default 200).
+# [vars]
+# DAILY_LIMIT = "200"
+
+# Optional custom domain. After adding api.splitway.app in the Cloudflare
+# dashboard, the worker is reachable at https://api.splitway.app/v1/chat/completions
+# [[routes]]
+# pattern = "api.splitway.app/v1/*"
+# zone_name = "splitway.app"

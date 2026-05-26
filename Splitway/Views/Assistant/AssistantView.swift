@@ -74,7 +74,7 @@ struct AssistantView: View {
                 Text("Ask the assistant")
                     .font(.serifTitle)
                     .foregroundStyle(Color.text1)
-                Text("Turn on the AI assistant in Settings and paste your DeepSeek API key to start chatting.")
+                Text("Turn on the AI assistant in Settings to start chatting.")
                     .font(.body)
                     .foregroundStyle(Color.text2)
                     .multilineTextAlignment(.center)

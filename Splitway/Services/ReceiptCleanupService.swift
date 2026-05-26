@@ -138,8 +138,7 @@ final class ReceiptCleanupService: ObservableObject {
             messages: [
                 DeepSeekClient.Message(role: "system", content: system),
                 DeepSeekClient.Message(role: "user",   content: "Items:\n\(numbered)")
-            ],
-            apiKey: preferences.apiKey
+            ]
         )
 
         return try Self.parseCleanedArray(response, expectedCount: rawNames.count)

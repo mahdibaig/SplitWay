@@ -46,6 +46,13 @@ targets:
         UIBackgroundModes:
           - remote-notification
         ITSAppUsesNonExemptEncryption: false
+        # Splitway assistant proxy (see proxy/README.md). The DeepSeek API key
+        # never ships in the binary; instead the app POSTs to this Cloudflare
+        # Worker, which injects the key server-side. Both values must match
+        # what's deployed at `wrangler secret put APP_SHARED_SECRET`. Leave
+        # blank in a build that should have AI features disabled.
+        SplitwayAssistantBaseURL: ""
+        SplitwayAssistantSharedSecret: ""
     entitlements:
       path: Splitway/Splitway.entitlements
       properties:

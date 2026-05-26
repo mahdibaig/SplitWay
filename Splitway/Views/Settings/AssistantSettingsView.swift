@@ -3,31 +3,31 @@ import SwiftUI
 struct AssistantSettingsView: View {
     @EnvironmentObject private var preferences: AssistantPreferences
 
+    private var proxyConfigured: Bool { AssistantProxyConfig.shared.isConfigured }
+
     var body: some View {
         List {
             Section {
                 Toggle("Enable AI assistant", isOn: $preferences.enabled)
+                    .disabled(!proxyConfigured)
             } footer: {
-                Text("Your question and a snapshot of household data are sent to DeepSeek to generate the answer. Conversation history is stored on this device only.")
+                if proxyConfigured {
+                    Text("Your question and a snapshot of household data are sent to the Splitway assistant service. Conversation history is stored on this device only.")
+                } else {
+                    Text("The assistant service isn't configured in this build. AI features are unavailable until the next app update.")
+                        .foregroundStyle(Color.red)
+                }
             }
 
             Section {
-                SecureField("DeepSeek API key", text: $preferences.apiKey)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .textContentType(.password)
                 TextField("Model", text: $preferences.model)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
+                    .disabled(!proxyConfigured)
             } header: {
-                Text("DeepSeek")
+                Text("Advanced")
             } footer: {
-                Text("Get a key at platform.deepseek.com. Model defaults to deepseek-chat. Change it if DeepSeek renames their V4 endpoint.")
-            }
-
-            Section {
-                Link("DeepSeek pricing & docs",
-                     destination: URL(string: "https://platform.deepseek.com/")!)
+                Text("Defaults to deepseek-chat. Most users should leave this alone.")
             }
         }
         .scrollContentBackground(.hidden)

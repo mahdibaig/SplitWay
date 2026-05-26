@@ -52,7 +52,9 @@ final class AssistantService: ObservableObject {
     /// prompt + context snapshot + last N messages, persist the reply.
     func send(_ prompt: String) async {
         guard preferences.isConfigured, let householdID = householdService.currentHousehold?.id else {
-            errorMessage = "Turn on AI assistant in Settings and add your API key first."
+            errorMessage = AssistantProxyConfig.shared.isConfigured
+                ? "Turn on AI assistant in Settings first."
+                : "AI assistant isn't available in this build."
             return
         }
         let trimmed = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -77,7 +79,7 @@ final class AssistantService: ObservableObject {
 
             client.model = preferences.model
             let apiMessages = buildAPIMessages(now: now)
-            let response = try await client.complete(messages: apiMessages, apiKey: preferences.apiKey)
+            let response = try await client.complete(messages: apiMessages)
 
             let reply = ChatMessage(
                 id: UUID(),

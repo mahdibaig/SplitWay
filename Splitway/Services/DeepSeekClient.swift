@@ -1,27 +1,33 @@
 import Foundation
 
-/// Minimal DeepSeek V4 chat client. DeepSeek exposes an OpenAI-compatible
-/// REST endpoint, so the JSON shape is the same as `chat/completions`.
+/// Minimal DeepSeek V4 chat client. We don't talk to DeepSeek directly any
+/// more — every request goes through our Cloudflare Worker proxy, which
+/// injects the master `Authorization: Bearer <DEEPSEEK_API_KEY>` server-side.
+/// The app authenticates with the worker using a shared secret in the
+/// `X-App-Auth` header (configured via `AssistantProxyConfig`).
+///
+/// The JSON shape on the wire is unchanged: the worker forwards the body
+/// untouched, and DeepSeek's response is returned untouched. So this still
+/// looks like a normal OpenAI-compatible client.
 struct DeepSeekClient: Sendable {
 
-    /// Default endpoint and model. Override if DeepSeek renames their V4 model.
-    var endpoint: URL = URL(string: "https://api.deepseek.com/chat/completions")!
     var model: String = "deepseek-chat"
     var session: URLSession = .shared
+    var proxy: AssistantProxyConfig = .shared
 
     enum ClientError: Error, LocalizedError {
-        case missingAPIKey
+        case proxyNotConfigured
         case badStatus(Int, String)
         case malformedResponse
 
         var errorDescription: String? {
             switch self {
-            case .missingAPIKey:
-                return "DeepSeek API key isn't set. Open Settings, Preferences, Assistant, and paste your key."
+            case .proxyNotConfigured:
+                return "AI assistant isn't available in this build. The proxy URL or shared secret is missing."
             case .badStatus(let code, let body):
-                return "DeepSeek returned HTTP \(code). \(body.prefix(200))"
+                return "Assistant proxy returned HTTP \(code). \(body.prefix(200))"
             case .malformedResponse:
-                return "Couldn't parse the response from DeepSeek."
+                return "Couldn't parse the assistant response."
             }
         }
     }
@@ -31,8 +37,11 @@ struct DeepSeekClient: Sendable {
         let content: String
     }
 
-    func complete(messages: [Message], apiKey: String) async throws -> String {
-        guard !apiKey.isEmpty else { throw ClientError.missingAPIKey }
+    func complete(messages: [Message]) async throws -> String {
+        guard let endpoint = proxy.chatCompletionsURL,
+              let secret = proxy.sharedSecret else {
+            throw ClientError.proxyNotConfigured
+        }
 
         struct Body: Encodable {
             let model: String
@@ -44,7 +53,7 @@ struct DeepSeekClient: Sendable {
 
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
-        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue(secret, forHTTPHeaderField: "X-App-Auth")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = payload
         request.timeoutInterval = 60
