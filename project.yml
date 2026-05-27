@@ -20,6 +20,9 @@ targets:
     type: application
     platform: iOS
     deploymentTarget: "17.0"
+    configFiles:
+      Debug: Splitway/Config/Secrets.xcconfig
+      Release: Splitway/Config/Secrets.xcconfig
     sources:
       - path: Splitway
         excludes:
@@ -51,8 +54,10 @@ targets:
         # Worker, which injects the key server-side. Both values must match
         # what's deployed at `wrangler secret put APP_SHARED_SECRET`. Leave
         # blank in a build that should have AI features disabled.
-        SplitwayAssistantBaseURL: ""
-        SplitwayAssistantSharedSecret: ""
+        # Substituted at build time from Splitway/Config/Secrets.xcconfig
+        # (gitignored). See Splitway/Config/Secrets.xcconfig.example.
+        SplitwayAssistantBaseURL: "$(SPLITWAY_ASSISTANT_BASE_URL)"
+        SplitwayAssistantSharedSecret: "$(SPLITWAY_ASSISTANT_SHARED_SECRET)"
     entitlements:
       path: Splitway/Splitway.entitlements
       properties:

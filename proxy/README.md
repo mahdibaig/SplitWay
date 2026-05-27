@@ -74,20 +74,31 @@ In the Cloudflare dashboard for the `splitway.app` zone:
 
 ## Configure the iOS app
 
-In Xcode, target Splitway → Info plist, set (or edit `project.yml` if you
-regenerate via xcodegen):
+The two values live in `Splitway/Config/Secrets.xcconfig`, which is
+**gitignored**. Don't paste secrets into `project.yml`; that file is
+committed and the repo is public.
 
-| Key | Value |
-|---|---|
-| `SplitwayAssistantBaseURL` | `https://api.splitway.app` (or the workers.dev URL) |
-| `SplitwayAssistantSharedSecret` | the long random string from `wrangler secret put APP_SHARED_SECRET` |
+1. Copy the template:
+   ```sh
+   cp Splitway/Config/Secrets.xcconfig.example \
+      Splitway/Config/Secrets.xcconfig
+   ```
+2. Open `Splitway/Config/Secrets.xcconfig` and fill in:
+   - `SPLITWAY_ASSISTANT_BASE_URL` — your workers.dev URL (the `$()` between
+     `https:` and `//` is a required xcconfig escape; don't remove it)
+   - `SPLITWAY_ASSISTANT_SHARED_SECRET` — the random string from
+     `wrangler secret put APP_SHARED_SECRET`
+3. Regenerate the Xcode project: `xcodegen generate`
+4. Build and run. The "AI assistant" toggle in Settings just works; the
+   user never enters an API key.
 
-Build and run. The "AI assistant" toggle in Settings now just works for Pro
-users; the user never enters an API key.
+`project.yml` references those via `$(SPLITWAY_ASSISTANT_…)` in the
+Info.plist properties, and the target's `configFiles` pulls them from
+`Secrets.xcconfig` at build time.
 
-If those Info.plist keys are blank or missing, the assistant gracefully
-falls back to "not configured" with a Settings link, the same way it used
-to when the user hadn't pasted a key.
+If those values are blank or missing, the assistant gracefully falls back
+to "not configured" with a Settings link, the same way it used to when the
+user hadn't pasted a key.
 
 ## Rotate the DeepSeek key
 
