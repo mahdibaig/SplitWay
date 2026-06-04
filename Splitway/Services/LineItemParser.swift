@@ -36,10 +36,12 @@ enum LineItemParser {
             // Skip noise.
             if shouldIgnore(text) { pendingName = nil; continue }
 
-            // Lines containing 2+ prices are almost always totals/headers/junk
+            // Lines with 3+ prices are almost always totals/headers/junk
             // on real receipts (payment-details rows, multi-column summaries).
-            // Drop them rather than letting the regex pick the last price.
-            if priceCount(in: text) >= 2 { pendingName = nil; continue }
+            // 2-price lines come up legitimately on Costco-style receipts
+            // (unit price × qty = line total), so we let those through and
+            // the regex picks the last price as the actual amount.
+            if priceCount(in: text) >= 3 { pendingName = nil; continue }
 
             // Same-line "item ... $price" match.
             if let (name, amount) = matchItemAndPrice(text) {
@@ -103,11 +105,15 @@ enum LineItemParser {
     }
 
     /// Filters out lines that look like totals, dates, or pure numbers.
+    /// Costco-style receipts pad item names with SKU prefixes ("E 1234567 KS
+    /// BATT AA40") so the letter ratio can be low. We accept anything with
+    /// at least 2 letters AND a 20%+ letter density.
     private static func looksLikeItemName(_ text: String) -> Bool {
         let trimmed = text.trimmingCharacters(in: .whitespaces)
         guard trimmed.count >= 2 else { return false }
         let letters = trimmed.filter { $0.isLetter }.count
-        return Double(letters) / Double(trimmed.count) >= 0.35
+        guard letters >= 2 else { return false }
+        return Double(letters) / Double(trimmed.count) >= 0.20
     }
 
     private static let priceOnlyRegex: NSRegularExpression = {

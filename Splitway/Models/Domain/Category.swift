@@ -15,6 +15,20 @@ enum ExpenseCategory: String, CaseIterable, Codable, Sendable, Identifiable {
 
     var id: String { rawValue }
 
+    /// Fuzzy lookup used by the LLM-driven receipt cleanup, where the model
+    /// might return "householdSupplies", "household_supplies",
+    /// "Household Supplies", or "household supplies". Returns nil if no case
+    /// matches even loosely.
+    static func lookup(_ raw: String) -> ExpenseCategory? {
+        if let exact = ExpenseCategory(rawValue: raw) { return exact }
+        let needle = raw
+            .lowercased()
+            .replacingOccurrences(of: "_", with: "")
+            .replacingOccurrences(of: " ", with: "")
+            .replacingOccurrences(of: "-", with: "")
+        return ExpenseCategory.allCases.first { $0.rawValue.lowercased() == needle }
+    }
+
     var displayName: String {
         switch self {
         case .rent:              return "Rent"

@@ -16,6 +16,7 @@ struct ReceiptReviewView: View {
     @State private var date: Date = Date()
     @State private var assigningItemID: UUID?
     @State private var quantityItemID: UUID?
+    @State private var categoryItemID: UUID?
     @State private var showCategoryPicker = false
     @State private var isWorking = false
 
@@ -80,6 +81,16 @@ struct ReceiptReviewView: View {
                 showCategoryPicker = false
             }
         }
+        .sheet(item: $categoryItemID) { id in
+            if let idx = items.firstIndex(where: { $0.id == id }) {
+                CategoryPickerView(
+                    selected: items[idx].lineItem.category ?? category
+                ) { newValue in
+                    items[idx].lineItem.category = newValue
+                    categoryItemID = nil
+                }
+            }
+        }
     }
 
     private var receiptThumbnail: some View {
@@ -98,10 +109,12 @@ struct ReceiptReviewView: View {
     private var recognitionBanner: some View {
         let known = items.filter { $0.matchedRule != nil }.count
         let new = items.count - known
+        let distinctCats = Set(items.compactMap { $0.lineItem.category })
+        let willSplit = distinctCats.count >= 2
         if !items.isEmpty {
             HStack(alignment: .top, spacing: 10) {
-                Image(systemName: "sparkles")
-                    .foregroundStyle(Color.success)
+                Image(systemName: willSplit ? "rectangle.split.3x1" : "sparkles")
+                    .foregroundStyle(willSplit ? Color.brand : Color.success)
                 VStack(alignment: .leading, spacing: 2) {
                     if known == 0 {
                         Text("\(new) new item\(new == 1 ? "" : "s") to review.")
@@ -116,14 +129,23 @@ struct ReceiptReviewView: View {
                             .font(.cardLabel.weight(.medium))
                             .foregroundStyle(Color.text1)
                     }
-                    Text("Green dot = known. Orange dot = new.")
-                        .font(.caption)
-                        .foregroundStyle(Color.text2)
+                    if willSplit {
+                        Text("Mixed categories detected. Saves as \(distinctCats.count) separate expenses so reports stay accurate. Tap a category chip to change it.")
+                            .font(.caption)
+                            .foregroundStyle(Color.text2)
+                    } else {
+                        Text("Tap a category chip below to change how an item is categorized.")
+                            .font(.caption)
+                            .foregroundStyle(Color.text2)
+                    }
                 }
                 Spacer()
             }
             .padding(Spacing.cardPad)
-            .background(Color.successSoft, in: .rect(cornerRadius: Radius.card))
+            .background(
+                (willSplit ? Color.brandSoft : Color.successSoft),
+                in: .rect(cornerRadius: Radius.card)
+            )
         }
     }
 
@@ -211,7 +233,10 @@ struct ReceiptReviewView: View {
                         amount: 0,
                         quantity: 1,
                         assignedToUserIDs: [],
-                        category: nil
+                        // Default the new row to whatever overall category is
+                        // currently set, so the user can hit Add and start
+                        // typing without an extra tap to pick a category.
+                        category: category
                     )
                     items.append(ReviewItem(
                         lineItem: newItem,
@@ -284,22 +309,48 @@ struct ReceiptReviewView: View {
                 }
             }
 
-            Button {
-                assigningItemID = items[idx].id
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "person.2.fill")
-                        .font(.caption)
-                    Text(assignmentSummary(for: items[idx]))
-                        .font(.caption)
-                    Spacer()
-                    Image(systemName: "chevron.right").font(.caption2)
+            HStack(spacing: 8) {
+                Button {
+                    categoryItemID = items[idx].id
+                } label: {
+                    let cat = items[idx].lineItem.category
+                    HStack(spacing: 6) {
+                        Image(systemName: cat?.sfSymbol ?? "tag")
+                            .font(.caption)
+                        Text(cat?.displayName ?? "Set category")
+                            .font(.caption)
+                            .lineLimit(1)
+                        Image(systemName: "chevron.down").font(.caption2)
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(
+                        cat.map { Color.categoryBg($0) } ?? Color.surface2,
+                        in: .capsule
+                    )
+                    .foregroundStyle(
+                        cat.map { Color.categoryFg($0) } ?? Color.text2
+                    )
                 }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.surface2, in: .capsule)
-                .foregroundStyle(Color.text2)
+
+                Button {
+                    assigningItemID = items[idx].id
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "person.2.fill")
+                            .font(.caption)
+                        Text(assignmentSummary(for: items[idx]))
+                            .font(.caption)
+                            .lineLimit(1)
+                        Spacer(minLength: 4)
+                        Image(systemName: "chevron.right").font(.caption2)
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.surface2, in: .capsule)
+                    .foregroundStyle(Color.text2)
+                }
             }
         }
         .padding(Spacing.cardPad)

@@ -49,7 +49,7 @@ final class ReceiptCleanupService: ObservableObject {
                     result[idx].displayName = cached.cleaned
                     cleanedIDs.insert(result[idx].id)
                 }
-                if let raw = cached.category, let cat = ExpenseCategory(rawValue: raw) {
+                if let raw = cached.category, let cat = ExpenseCategory.lookup(raw) {
                     result[idx].category = cat
                 }
             } else if !item.itemName.trimmingCharacters(in: .whitespaces).isEmpty {
@@ -115,23 +115,69 @@ final class ReceiptCleanupService: ObservableObject {
 
         let categoryList = ExpenseCategory.allCases.map(\.rawValue).joined(separator: ", ")
         let system = """
-        You normalize abbreviated grocery and retail receipt item names AND \
-        categorize each into one of these exact category strings: \(categoryList).
+        You normalize abbreviated retail receipt item names AND assign each \
+        item to ONE of these exact category strings: \(categoryList).
+
+        IMPORTANT: receipts often mix categories. A single Costco, Walmart, \
+        Target, or grocery-store trip routinely includes food AND paper goods \
+        AND batteries AND toiletries AND medicine AND occasionally gasoline. \
+        DO NOT default everything to "groceries". Evaluate each item on its \
+        own merits. If an item is clearly not food or drink for home, pick a \
+        more specific category.
+
+        Category guide:
+        - groceries: edible food and non-alcoholic drinks for home cooking \
+          (milk, eggs, produce, meat, bread, snacks, soda, bottled water, \
+          coffee beans, condiments).
+        - diningOut: prepared restaurant meals, takeout, deli sandwiches, \
+          coffee-shop drinks, alcohol at a bar.
+        - transportation: gasoline, diesel, fuel, parking, tolls, transit \
+          fares, ride share, car wash, motor oil, windshield washer fluid.
+        - householdSupplies: paper towels, toilet paper, dish soap, laundry \
+          detergent, cleaning products, trash bags, foil, plastic wrap, \
+          batteries, light bulbs, kitchen tools, small appliances, \
+          electronics, hardware, garden, pet supplies.
+        - personalCare: shampoo, conditioner, body wash, toothpaste, makeup, \
+          razors, deodorant, hair products.
+        - healthcare: over-the-counter medicine, vitamins, supplements, \
+          prescriptions, bandages, first aid.
+        - entertainment: movie tickets, streaming subscriptions, books, \
+          games, toys, hobby supplies, sporting equipment.
+        - utilities: bills only (water, electric, gas, internet). Almost \
+          never appears on a retail receipt.
+        - rent: rent only. Almost never appears on a retail receipt.
+        - other: only if the item genuinely fits none of the above.
+
         Rules for the name field:
         - Keep it brief: 1 to 4 words.
         - Do not invent details that aren't in the raw text.
         - If the raw text is already a clean name, return it unchanged.
         - Preserve quantity hints (gal, oz, lb) when in the raw text.
         - Plain text only, no markdown, no asterisks, no dashes.
+
         Rules for the category field:
-        - Use one of the exact strings above, lowercase, no quotes.
-        - If unsure, return "other".
+        - Use one of the exact strings from the list above.
+        - If genuinely unsure, return "other" — but try the guide first.
 
         Return a single JSON array in the SAME ORDER as the input. Each \
         element MUST be an object: {"name": "...", "category": "..."}. \
-        No prose, no code fences, no other keys. Example:
-        [{"name": "Whole milk gallon", "category": "groceries"}, \
-        {"name": "Bananas", "category": "groceries"}]
+        No prose, no code fences, no other keys.
+
+        Examples (mixed-category trip):
+        Input:
+        1. WHL MLK GAL
+        2. KS PAPER TWLS
+        3. UNLEADED GAS
+        4. ADVIL 100CT
+        5. KS BATT AA40
+        6. CREST TPASTE
+        Output:
+        [{"name":"Whole milk gallon","category":"groceries"},\
+        {"name":"Kirkland paper towels","category":"householdSupplies"},\
+        {"name":"Unleaded gas","category":"transportation"},\
+        {"name":"Advil 100 ct","category":"healthcare"},\
+        {"name":"Kirkland AA batteries","category":"householdSupplies"},\
+        {"name":"Crest toothpaste","category":"personalCare"}]
         """
 
         let response = try await client.complete(
@@ -187,7 +233,7 @@ final class ReceiptCleanupService: ObservableObject {
         if let arr = try? JSONDecoder().decode([Obj].self, from: data) {
             return arr.map { entry in
                 let name = entry.name ?? ""
-                let cat = entry.category.flatMap { ExpenseCategory(rawValue: $0.lowercased()) }
+                let cat = entry.category.flatMap { ExpenseCategory.lookup($0) }
                 return Cleaned(name: name, category: cat)
             }
         }
