@@ -51,6 +51,8 @@ private struct ExpensesListContent: View {
     @EnvironmentObject private var householdService: HouseholdService
     @EnvironmentObject private var groupService: GroupService
 
+    @State private var expandedExpenseIDs: Set<UUID> = []
+
     var body: some View {
         let memberIDs = membersService.members.map(\.id)
         let groupMembership = membersService.groupMembership
@@ -136,36 +138,67 @@ private struct ExpensesListContent: View {
         let payer = membersService.members.first {
             $0.id == UserID(expense.splitRule.paidBy.first?.userID ?? UUID())
         }
-        HStack(spacing: 12) {
-            ZStack {
-                RoundedRectangle(cornerRadius: Radius.tile).fill(Color.categoryBg(expense.category))
-                Image(systemName: expense.category.sfSymbol).foregroundStyle(Color.categoryFg(expense.category))
-            }
-            .frame(width: 40, height: 40)
+        let hasLineItems = !expense.lineItems.isEmpty
+        let isExpanded = expandedExpenseIDs.contains(expense.id)
 
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 6) {
-                    Text(expense.description.isEmpty ? expense.category.displayName : expense.description)
-                        .font(.cardTitle)
-                        .foregroundStyle(Color.text1)
-                    if expense.receiptImageData != nil {
-                        Image(systemName: "paperclip")
-                            .font(.caption2)
-                            .foregroundStyle(Color.text3)
-                            .accessibilityLabel("Has receipt")
+        VStack(alignment: .leading, spacing: 0) {
+            Button {
+                guard hasLineItems else { return }
+                if isExpanded {
+                    expandedExpenseIDs.remove(expense.id)
+                } else {
+                    expandedExpenseIDs.insert(expense.id)
+                }
+            } label: {
+                HStack(spacing: 12) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: Radius.tile).fill(Color.categoryBg(expense.category))
+                        Image(systemName: expense.category.sfSymbol).foregroundStyle(Color.categoryFg(expense.category))
+                    }
+                    .frame(width: 40, height: 40)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 6) {
+                            Text(expense.description.isEmpty ? expense.category.displayName : expense.description)
+                                .font(.cardTitle)
+                                .foregroundStyle(Color.text1)
+                            if expense.receiptImageData != nil {
+                                Image(systemName: "paperclip")
+                                    .font(.caption2)
+                                    .foregroundStyle(Color.text3)
+                                    .accessibilityLabel("Has receipt")
+                            }
+                            if hasLineItems {
+                                Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                                    .font(.caption2)
+                                    .foregroundStyle(Color.text3)
+                            }
+                        }
+                        HStack(spacing: 4) {
+                            Text("\(payer?.displayName ?? "Someone") · \(expense.splitRule.type.displayName)")
+                                .font(.cardLabel)
+                                .foregroundStyle(Color.text2)
+                            if hasLineItems {
+                                Text("·").font(.cardLabel).foregroundStyle(Color.text3)
+                                Text("\(expense.lineItems.count) item\(expense.lineItems.count == 1 ? "" : "s")")
+                                    .font(.cardLabel).foregroundStyle(Color.text2)
+                            }
+                        }
+                    }
+                    Spacer()
+
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text(CurrencyFormat.usd(expense.amount))
+                            .font(.cardTitle)
+                            .foregroundStyle(Color.text1)
+                        ExpenseImpactLabel(expense: expense, meID: householdService.currentMember?.id)
                     }
                 }
-                Text("\(payer?.displayName ?? "Someone") · \(expense.splitRule.type.displayName)")
-                    .font(.cardLabel)
-                    .foregroundStyle(Color.text2)
             }
-            Spacer()
+            .buttonStyle(.plain)
 
-            VStack(alignment: .trailing, spacing: 2) {
-                Text(CurrencyFormat.usd(expense.amount))
-                    .font(.cardTitle)
-                    .foregroundStyle(Color.text1)
-                ExpenseImpactLabel(expense: expense, meID: householdService.currentMember?.id)
+            if isExpanded {
+                ExpenseLineItemList(lineItems: expense.lineItems)
             }
         }
         .padding(Spacing.cardPad)

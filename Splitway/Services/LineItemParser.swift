@@ -13,9 +13,20 @@ enum LineItemParser {
     }
 
     static func parse(lines: [OCRLine]) -> ParsedReceipt {
+        let merchant = guessMerchant(lines)
+
+        // Costco receipts have a rigid "{4-7 digit SKU} {NAME} {PRICE}"
+        // shape that the generic parser misses ~3 items out of 16 on real
+        // scans (apostrophes, percent signs, and period-containing names
+        // OCR weirdly). When we detect Costco, use a store-specific pass.
+        if let merchant, merchant.lowercased().contains("costco") {
+            if let costco = parseCostco(lines: lines, merchant: merchant) {
+                return costco
+            }
+        }
+
         var items: [LineItem] = []
         var total: Decimal?
-        let merchant = guessMerchant(lines)
 
         // Track the most recent alpha-only "candidate name" so we can pair it
         // with a price-only line that follows (handles column-layout receipts
@@ -85,9 +96,15 @@ enum LineItemParser {
         )
     }
 
-    /// Conservative merchant guess: short, mostly alpha, no digits / colons.
-    /// Returns nil rather than dumping noisy lines into the description.
+    /// Conservative merchant guess. Looks at the first ~8 OCR lines for a
+    /// short, mostly-alphabetic line (so we don't dump store numbers or
+    /// addresses into the description). Costco gets a fast path because its
+    /// header is "COSTCO WHOLESALE" and we want exactly "Costco" downstream.
     private static func guessMerchant(_ lines: [OCRLine]) -> String? {
+        for line in lines.prefix(12) {
+            let s = line.text.trimmingCharacters(in: .whitespaces)
+            if s.uppercased().contains("COSTCO") { return "Costco" }
+        }
         for line in lines.prefix(8) {
             let s = line.text.trimmingCharacters(in: .whitespaces)
             guard !s.isEmpty, s.count <= 30 else { continue }
@@ -97,6 +114,88 @@ enum LineItemParser {
             return s
         }
         return nil
+    }
+
+    // MARK: - Costco-specific parser
+    //
+    // Costco prints every item as `{SKU} {NAME} {PRICE}` on one OCR line:
+    //   24311 VAR. MUFFIN          9.99
+    //   1239521 KS ULTRA LIQ      17.99
+    //   1474436 KS TRAIL MIX      12.69
+    //
+    // The generic parser misses ~3 of 16 on a real receipt because OCR
+    // sometimes attaches stray characters or because the name contains
+    // punctuation that `looksLikeItemName` is suspicious of. This pass is
+    // strict about the SKU prefix and permissive about everything else.
+
+    private static let costcoLineRegex: NSRegularExpression = {
+        // (SKU 4-7 digits) (name, must contain at least one letter) (price X.XX)
+        // The name doesn't have to start with a letter — "18CT EGGS" and
+        // "24CT COOKIES" are real Costco lines. We just require *some*
+        // alphabetic content so address lines like "2258 315 211 057"
+        // can't be mistaken for items.
+        try! NSRegularExpression(
+            pattern: #"^\s*(\d{4,7})\s+(.*?[A-Za-z].*?)\s+\$?(\d+\.\d{2})\s*$"#,
+            options: []
+        )
+    }()
+
+    private static let costcoTotalRegex: NSRegularExpression = {
+        try! NSRegularExpression(
+            pattern: #"(?i)^\*+\s*TOTAL\b.*?\$?(\d+\.\d{2})"#,
+            options: []
+        )
+    }()
+
+    private static func parseCostco(lines: [OCRLine], merchant: String) -> ParsedReceipt? {
+        var items: [LineItem] = []
+        var total: Decimal?
+
+        for line in lines {
+            let text = line.text.trimmingCharacters(in: .whitespaces)
+            guard !text.isEmpty else { continue }
+
+            // Stop pulling line items once we hit the totals block.
+            if text.uppercased().contains("SUBTOTAL")
+                || text.uppercased().contains("TOTAL TAX")
+                || text.uppercased().contains("BOTTOM OF BASKET") {
+                // Don't break — KS TOWEL / KS BATH come AFTER "Bottom of
+                // Basket" in real Costco receipts. Just skip this line.
+                if let t = matchCostcoTotal(text) { total = t }
+                continue
+            }
+
+            if let (name, amount) = matchCostcoItem(text) {
+                let cleaned = name.trimmingCharacters(in: .whitespaces)
+                guard !cleaned.isEmpty else { continue }
+                items.append(makeLineItem(name: cleaned, amount: amount))
+            }
+        }
+
+        // If the Costco-specific pass found nothing useful, fall through to
+        // the generic parser by returning nil. Otherwise commit our result.
+        guard !items.isEmpty else { return nil }
+        return ParsedReceipt(merchant: merchant, items: items, total: total)
+    }
+
+    private static func matchCostcoItem(_ text: String) -> (String, Decimal)? {
+        let range = NSRange(text.startIndex..., in: text)
+        guard let match = costcoLineRegex.firstMatch(in: text, range: range),
+              match.numberOfRanges == 4,
+              let nameRange = Range(match.range(at: 2), in: text),
+              let priceRange = Range(match.range(at: 3), in: text),
+              let amount = Decimal(string: String(text[priceRange]))
+        else { return nil }
+        return (String(text[nameRange]), amount)
+    }
+
+    private static func matchCostcoTotal(_ text: String) -> Decimal? {
+        let range = NSRange(text.startIndex..., in: text)
+        guard let match = costcoTotalRegex.firstMatch(in: text, range: range),
+              match.numberOfRanges >= 2,
+              let r = Range(match.range(at: 1), in: text)
+        else { return nil }
+        return Decimal(string: String(text[r]))
     }
 
     private static func priceCount(in text: String) -> Int {

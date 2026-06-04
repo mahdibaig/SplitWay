@@ -115,7 +115,6 @@ final class ReceiptScanService: ObservableObject {
         }()
 
         let storeImage = retention.shouldStoreNewReceipts
-        let suffixNeeded = buckets.count > 1
         var created: [Expense] = []
         let now = Date()
 
@@ -138,14 +137,12 @@ final class ReceiptScanService: ObservableObject {
                 total: total
             )
 
-            // Description gets a " — Groceries" suffix when we split, so the
-            // user can tell the rows apart in the expense list.
-            let baseDescription = description.isEmpty
+            // Description is just the merchant (or whatever the user typed).
+            // No " · Groceries" suffix — the category icon on each row
+            // already tells split-receipt entries apart visually.
+            let resolvedDescription = description.isEmpty
                 ? (draft.merchant ?? "Receipt")
                 : description
-            let resolvedDescription = suffixNeeded
-                ? "\(baseDescription) · \(bucket.category.displayName)"
-                : baseDescription
 
             let expense = Expense(
                 id: UUID(),

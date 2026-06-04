@@ -9,6 +9,7 @@ struct HomeView: View {
     @EnvironmentObject private var recurringService: RecurringService
 
     @State private var showVariableSheet = false
+    @State private var expandedExpenseIDs: Set<UUID> = []
 
     var body: some View {
         NavigationStack {
@@ -195,6 +196,25 @@ struct HomeView: View {
             .background(Color.surface, in: .rect(cornerRadius: Radius.card))
         } else {
             ForEach(recents) { expense in
+                recentExpenseRow(expense)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func recentExpenseRow(_ expense: Expense) -> some View {
+        let hasLineItems = !expense.lineItems.isEmpty
+        let isExpanded = expandedExpenseIDs.contains(expense.id)
+
+        VStack(alignment: .leading, spacing: 0) {
+            Button {
+                guard hasLineItems else { return }
+                if isExpanded {
+                    expandedExpenseIDs.remove(expense.id)
+                } else {
+                    expandedExpenseIDs.insert(expense.id)
+                }
+            } label: {
                 HStack(spacing: 12) {
                     ZStack {
                         RoundedRectangle(cornerRadius: Radius.tile).fill(Color.categoryBg(expense.category))
@@ -202,10 +222,24 @@ struct HomeView: View {
                     }
                     .frame(width: 40, height: 40)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(expense.description.isEmpty ? expense.category.displayName : expense.description)
-                            .font(.cardTitle).foregroundStyle(Color.text1)
-                        Text(expense.date.formatted(.dateTime.month(.abbreviated).day()))
-                            .font(.cardLabel).foregroundStyle(Color.text2)
+                        HStack(spacing: 6) {
+                            Text(expense.description.isEmpty ? expense.category.displayName : expense.description)
+                                .font(.cardTitle).foregroundStyle(Color.text1)
+                            if hasLineItems {
+                                Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                                    .font(.caption2)
+                                    .foregroundStyle(Color.text3)
+                            }
+                        }
+                        HStack(spacing: 6) {
+                            Text(expense.date.formatted(.dateTime.month(.abbreviated).day()))
+                                .font(.cardLabel).foregroundStyle(Color.text2)
+                            if hasLineItems {
+                                Text("·").font(.cardLabel).foregroundStyle(Color.text3)
+                                Text("\(expense.lineItems.count) item\(expense.lineItems.count == 1 ? "" : "s")")
+                                    .font(.cardLabel).foregroundStyle(Color.text2)
+                            }
+                        }
                     }
                     Spacer()
                     VStack(alignment: .trailing, spacing: 2) {
@@ -214,10 +248,15 @@ struct HomeView: View {
                         ExpenseImpactLabel(expense: expense, meID: householdService.currentMember?.id)
                     }
                 }
-                .padding(Spacing.cardPad)
-                .background(Color.surface, in: .rect(cornerRadius: Radius.card))
+            }
+            .buttonStyle(.plain)
+
+            if isExpanded {
+                ExpenseLineItemList(lineItems: expense.lineItems)
             }
         }
+        .padding(Spacing.cardPad)
+        .background(Color.surface, in: .rect(cornerRadius: Radius.card))
     }
 
     private func label(forBalance balance: Decimal) -> String {
