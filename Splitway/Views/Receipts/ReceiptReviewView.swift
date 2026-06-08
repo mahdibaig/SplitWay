@@ -20,6 +20,13 @@ struct ReceiptReviewView: View {
     @State private var showCategoryPicker = false
     @State private var isWorking = false
 
+    // Bulk-select mode: when on, each row shows a checkbox, tapping rows
+    // adds to selection, and a floating bar offers bulk actions.
+    @State private var selectMode: Bool = false
+    @State private var selectedIDs: Set<UUID> = []
+    @State private var showBulkAssign = false
+    @State private var showBulkCategory = false
+
     var body: some View {
         ScrollView {
             VStack(spacing: Spacing.cardGap) {
@@ -79,6 +86,24 @@ struct ReceiptReviewView: View {
             CategoryPickerView(selected: category) { newValue in
                 category = newValue
                 showCategoryPicker = false
+            }
+        }
+        .sheet(isPresented: $showBulkAssign) {
+            LineItemAssignmentSheet(
+                itemName: "\(selectedIDs.count) selected item\(selectedIDs.count == 1 ? "" : "s")",
+                members: members,
+                assignedIDs: [],
+                rememberChoice: .justThisTime,
+                onSave: { newAssignment, _ in
+                    applyBulkAssignment(newAssignment)
+                    showBulkAssign = false
+                }
+            )
+        }
+        .sheet(isPresented: $showBulkCategory) {
+            CategoryPickerView(selected: category) { newValue in
+                applyBulkCategory(newValue)
+                showBulkCategory = false
             }
         }
         .sheet(item: $categoryItemID) { id in
@@ -221,38 +246,145 @@ struct ReceiptReviewView: View {
 
     private var itemsSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
+            HStack(spacing: 12) {
                 Text("Line items").font(.cardLabel).foregroundStyle(Color.text2)
                 Spacer()
-                Button {
-                    let newItem = LineItem(
-                        id: UUID(),
-                        itemName: "",
-                        displayName: "",
-                        normalizedItemName: "",
-                        amount: 0,
-                        quantity: 1,
-                        assignedToUserIDs: [],
-                        // Default the new row to whatever overall category is
-                        // currently set, so the user can hit Add and start
-                        // typing without an extra tap to pick a category.
-                        category: category
-                    )
-                    items.append(ReviewItem(
-                        lineItem: newItem,
-                        matchedRule: nil,
-                        rememberChoice: .justThisTime
-                    ))
-                } label: {
-                    Label("Add", systemImage: "plus")
-                        .font(.cardLabel)
-                        .foregroundStyle(Color.brand)
+                if !items.isEmpty {
+                    Button {
+                        selectMode.toggle()
+                        if !selectMode { selectedIDs.removeAll() }
+                    } label: {
+                        Text(selectMode ? "Done" : "Select")
+                            .font(.cardLabel)
+                            .foregroundStyle(Color.brand)
+                    }
                 }
+                if !selectMode {
+                    Button {
+                        let newItem = LineItem(
+                            id: UUID(),
+                            itemName: "",
+                            displayName: "",
+                            normalizedItemName: "",
+                            amount: 0,
+                            quantity: 1,
+                            assignedToUserIDs: [],
+                            // Default the new row to whatever overall category
+                            // is currently set, so the user can hit Add and
+                            // start typing without an extra tap.
+                            category: category
+                        )
+                        items.append(ReviewItem(
+                            lineItem: newItem,
+                            matchedRule: nil,
+                            rememberChoice: .justThisTime
+                        ))
+                    } label: {
+                        Label("Add", systemImage: "plus")
+                            .font(.cardLabel)
+                            .foregroundStyle(Color.brand)
+                    }
+                }
+            }
+
+            if selectMode {
+                bulkActionBar
             }
 
             ForEach(items.indices, id: \.self) { idx in
                 lineItemRow(idx: idx)
             }
+        }
+    }
+
+    private var bulkActionBar: some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 8) {
+                Button {
+                    let allIDs = Set(items.map(\.id))
+                    if selectedIDs == allIDs {
+                        selectedIDs.removeAll()
+                    } else {
+                        selectedIDs = allIDs
+                    }
+                } label: {
+                    let allSelected = selectedIDs.count == items.count
+                    Text(allSelected ? "Deselect all" : "Select all")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(Color.brand)
+                }
+                Spacer()
+                Text("\(selectedIDs.count) of \(items.count) selected")
+                    .font(.caption)
+                    .foregroundStyle(Color.text2)
+            }
+
+            HStack(spacing: 8) {
+                Button {
+                    showBulkAssign = true
+                } label: {
+                    Label("Assign…", systemImage: "person.2.fill")
+                        .font(.caption.weight(.medium))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
+                        .background(Color.brandSoft, in: .capsule)
+                        .foregroundStyle(Color.brand2)
+                }
+                .disabled(selectedIDs.isEmpty)
+                .opacity(selectedIDs.isEmpty ? 0.4 : 1)
+
+                Button {
+                    showBulkCategory = true
+                } label: {
+                    Label("Category…", systemImage: "tag.fill")
+                        .font(.caption.weight(.medium))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
+                        .background(Color.brandSoft, in: .capsule)
+                        .foregroundStyle(Color.brand2)
+                }
+                .disabled(selectedIDs.isEmpty)
+                .opacity(selectedIDs.isEmpty ? 0.4 : 1)
+
+                Button {
+                    applyBulkSharedByEveryone()
+                } label: {
+                    Label("Shared", systemImage: "person.3.fill")
+                        .font(.caption.weight(.medium))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
+                        .background(Color.brandSoft, in: .capsule)
+                        .foregroundStyle(Color.brand2)
+                }
+                .disabled(selectedIDs.isEmpty)
+                .opacity(selectedIDs.isEmpty ? 0.4 : 1)
+
+                Spacer()
+            }
+        }
+        .padding(10)
+        .background(Color.surface, in: .rect(cornerRadius: Radius.card))
+    }
+
+    private func applyBulkAssignment(_ newIDs: Set<UUID>) {
+        for idx in items.indices where selectedIDs.contains(items[idx].id) {
+            items[idx].lineItem.assignedToUserIDs = Array(newIDs)
+            // Bulk assignment clears any per-person-quantity override so
+            // the new shared-by-N split takes effect cleanly.
+            items[idx].lineItem.quantityPerUser = nil
+        }
+    }
+
+    private func applyBulkSharedByEveryone() {
+        for idx in items.indices where selectedIDs.contains(items[idx].id) {
+            items[idx].lineItem.assignedToUserIDs = []
+            items[idx].lineItem.quantityPerUser = nil
+        }
+    }
+
+    private func applyBulkCategory(_ newCategory: ExpenseCategory) {
+        for idx in items.indices where selectedIDs.contains(items[idx].id) {
+            items[idx].lineItem.category = newCategory
         }
     }
 
@@ -279,12 +411,27 @@ struct ReceiptReviewView: View {
 
         VStack(spacing: 8) {
             HStack(spacing: 8) {
+                if selectMode {
+                    let isSelected = selectedIDs.contains(items[idx].id)
+                    Button {
+                        if isSelected {
+                            selectedIDs.remove(items[idx].id)
+                        } else {
+                            selectedIDs.insert(items[idx].id)
+                        }
+                    } label: {
+                        Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                            .font(.title3)
+                            .foregroundStyle(isSelected ? Color.brand : Color.text3)
+                    }
+                }
                 statusDot(for: items[idx])
 
                 TextField("Item", text: nameBinding)
                     .font(.cardTitle)
                     .foregroundStyle(Color.text1)
                     .textInputAutocapitalization(.words)
+                    .disabled(selectMode)
 
                 if items[idx].wasAICleaned {
                     aiBadge(idx: idx)

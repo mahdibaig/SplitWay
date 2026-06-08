@@ -16,7 +16,10 @@ final class ReceiptCleanupService: ObservableObject {
     private struct Cached: Codable { let cleaned: String; let category: String? }
     private var cache: [String: Cached]
 
-    private static let cacheKey = "receiptCleanupCache.v2"
+    // Cache key bumped to v3 when the prompt learned about grocery-store
+    // prepared food (rotisserie, deli, take-and-bake) — old "diningOut"
+    // entries from previous scans need to be re-evaluated.
+    private static let cacheKey = "receiptCleanupCache.v3"
 
     init(preferences: AssistantPreferences) {
         self.preferences = preferences
@@ -31,7 +34,7 @@ final class ReceiptCleanupService: ObservableObject {
     /// Returns the items with `displayName` enriched, `category` filled where
     /// the LLM had a confident guess, and a parallel `cleanedIDs` set listing
     /// the line items the LLM renamed (so the UI can offer revert).
-    func cleanup(items: [LineItem]) async -> (items: [LineItem], cleanedIDs: Set<UUID>) {
+    func cleanup(items: [LineItem], merchant: String? = nil) async -> (items: [LineItem], cleanedIDs: Set<UUID>) {
         var result = items
         var cleanedIDs: Set<UUID> = []
 
@@ -62,7 +65,7 @@ final class ReceiptCleanupService: ObservableObject {
         client.model = preferences.model
 
         do {
-            let cleaned = try await callDeepSeek(rawNames: pending.map(\.rawName))
+            let cleaned = try await callDeepSeek(rawNames: pending.map(\.rawName), merchant: merchant)
             guard cleaned.count == pending.count else {
                 AppLog.lifecycle.error("Cleanup count mismatch: got \(cleaned.count, privacy: .public), expected \(pending.count, privacy: .public)")
                 return (result, cleanedIDs)
@@ -108,29 +111,56 @@ final class ReceiptCleanupService: ObservableObject {
 
     private struct Cleaned { let name: String; let category: ExpenseCategory? }
 
-    private func callDeepSeek(rawNames: [String]) async throws -> [Cleaned] {
+    private func callDeepSeek(rawNames: [String], merchant: String?) async throws -> [Cleaned] {
         let numbered = rawNames.enumerated()
             .map { "\($0.offset + 1). \($0.element)" }
             .joined(separator: "\n")
 
         let categoryList = ExpenseCategory.allCases.map(\.rawValue).joined(separator: ", ")
+        let merchantHint = merchant.map { "MERCHANT: \($0)\n\n" } ?? ""
+        let groceryStores = ["costco", "walmart", "target", "safeway",
+                             "trader joe", "whole foods", "kroger", "h-e-b",
+                             "heb", "publix", "aldi", "sam's club", "sams club"]
+        let merchantIsGroceryStore = merchant.map { name in
+            let lower = name.lowercased()
+            return groceryStores.contains { lower.contains($0) }
+        } ?? false
+
+        let groceryStoreRule = merchantIsGroceryStore
+            ? """
+
+              GROCERY-STORE CONTEXT: this receipt is from a grocery or \
+              warehouse store. PREPARED foods sold there — rotisserie \
+              chicken, deli sandwiches, take-and-bake meals, street tacos, \
+              hot bar food, sushi trays, bakery muffins, frozen meals, \
+              meatballs, lasagna, pesto, sauces — are ALL "groceries", NOT \
+              "diningOut". The "diningOut" category is reserved for \
+              restaurant or coffee-shop receipts where you sat down or \
+              ordered cooked-to-order food, NOT items you took home from a \
+              store. When in doubt at a grocery/warehouse store, prefer \
+              "groceries" for anything edible.
+              """
+            : ""
+
         let system = """
-        You normalize abbreviated retail receipt item names AND assign each \
-        item to ONE of these exact category strings: \(categoryList).
+        \(merchantHint)You normalize abbreviated retail receipt item names \
+        AND assign each item to ONE of these exact category strings: \
+        \(categoryList).
 
         IMPORTANT: receipts often mix categories. A single Costco, Walmart, \
         Target, or grocery-store trip routinely includes food AND paper goods \
         AND batteries AND toiletries AND medicine AND occasionally gasoline. \
         DO NOT default everything to "groceries". Evaluate each item on its \
         own merits. If an item is clearly not food or drink for home, pick a \
-        more specific category.
+        more specific category.\(groceryStoreRule)
 
         Category guide:
-        - groceries: edible food and non-alcoholic drinks for home cooking \
-          (milk, eggs, produce, meat, bread, snacks, soda, bottled water, \
-          coffee beans, condiments).
-        - diningOut: prepared restaurant meals, takeout, deli sandwiches, \
-          coffee-shop drinks, alcohol at a bar.
+        - groceries: edible food and non-alcoholic drinks for home (milk, \
+          eggs, produce, meat, bread, snacks, soda, bottled water, coffee \
+          beans, condiments, sauces, frozen meals, prepared/deli/bakery \
+          foods bought AT a grocery or warehouse store).
+        - diningOut: prepared meals from a RESTAURANT, cafe, bar, or coffee \
+          shop. Not items taken home from a grocery store.
         - transportation: gasoline, diesel, fuel, parking, tolls, transit \
           fares, ride share, car wash, motor oil, windshield washer fluid.
         - householdSupplies: paper towels, toilet paper, dish soap, laundry \

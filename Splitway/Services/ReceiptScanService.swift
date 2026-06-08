@@ -33,8 +33,14 @@ final class ReceiptScanService: ObservableObject {
         let lines = await VisionOCRService.recognizeText(in: image)
         let parsed = LineItemParser.parse(lines: lines)
 
-        // AI cleanup pass on the raw line items, with caching.
-        let (cleanedItems, aiCleanedIDs) = await cleanupService.cleanup(items: parsed.items)
+        // AI cleanup pass on the raw line items, with caching. Merchant
+        // context lets the model treat grocery-store prepared food
+        // (rotisserie, deli, take-and-bake) as groceries instead of
+        // "diningOut" — diningOut is restaurants only.
+        let (cleanedItems, aiCleanedIDs) = await cleanupService.cleanup(
+            items: parsed.items,
+            merchant: parsed.merchant
+        )
 
         // Apply rule pre-fill per item AFTER cleanup so SharedItemRule lookups
         // hit consistently using the cleaned display name.
@@ -79,10 +85,11 @@ final class ReceiptScanService: ObservableObject {
     }
 
     /// Saves the reviewed receipt as one or more real Expenses (one per
-    /// distinct line-item category, so a Costco trip with food + paper goods
-    /// + medicine lands cleanly in reports). Falls back to a single Expense
-    /// in the common case where every line item resolves to the same
-    /// category. Also upserts any `SharedItemRule`s the user asked to
+    /// Saves the reviewed receipt as a SINGLE Expense. Per-line-item
+    /// categories are preserved on each `LineItem` (so the Home tab
+    /// dropdown can group by category), and the expense's top-level
+    /// category is set to the dominant line-item category (by total
+    /// amount). Also upserts any `SharedItemRule`s the user asked to
     /// remember.
     @discardableResult
     func saveExpense(
@@ -92,108 +99,98 @@ final class ReceiptScanService: ObservableObject {
         description: String,
         date: Date,
         activeMembers: [HouseholdMember]
-    ) async throws -> [Expense] {
+    ) async throws -> Expense {
         guard
             let householdID = householdService.currentHousehold?.id,
             let me = householdService.currentMember?.id
         else { throw RepositoryError.notFound }
 
         let activeIDs = activeMembers.filter { !$0.isArchived }.map(\.id)
-        guard !items.isEmpty else { return [] }
+        guard !items.isEmpty else { throw RepositoryError.notFound }
 
-        // Bucket items by their per-item category, falling back to the
-        // expense-level category for any item the user/AI left unset.
-        let buckets: [(category: ExpenseCategory, items: [ReviewItem])] = {
-            var byCat: [ExpenseCategory: [ReviewItem]] = [:]
-            var order: [ExpenseCategory] = []
-            for item in items {
-                let cat = item.lineItem.category ?? category
-                if byCat[cat] == nil { order.append(cat) }
-                byCat[cat, default: []].append(item)
+        let lineItems = items.map { item -> LineItem in
+            var li = item.lineItem
+            // Fill in the expense-level category for any line item the
+            // user/AI didn't tag, so the dropdown always has something to
+            // group by.
+            if li.category == nil { li.category = category }
+            return li
+        }
+
+        let total = lineItems.reduce(Decimal.zero) { $0 + $1.amount }
+        guard total > 0 else { throw RepositoryError.notFound }
+
+        // Dominant-by-amount category becomes the expense's headline
+        // category (icon shown in lists, used by reports). Falls back to
+        // the user-picked category if line items have no categories.
+        let topCategory: ExpenseCategory = {
+            var totals: [ExpenseCategory: Decimal] = [:]
+            for li in lineItems {
+                guard let cat = li.category else { continue }
+                totals[cat, default: 0] += li.amount
             }
-            return order.map { ($0, byCat[$0] ?? []) }
+            return totals.max(by: { $0.value < $1.value })?.key ?? category
         }()
 
-        let storeImage = retention.shouldStoreNewReceipts
-        var created: [Expense] = []
+        let splitRule = Self.makeSplitRule(
+            lineItems: lineItems,
+            activeIDs: activeIDs,
+            paidBy: me,
+            total: total
+        )
+
+        let resolvedDescription = description.isEmpty
+            ? (draft.merchant ?? "Receipt")
+            : description
+
         let now = Date()
+        let expense = Expense(
+            id: UUID(),
+            householdID: householdID,
+            loggedByUserID: me,
+            amount: total,
+            currency: "USD",
+            category: topCategory,
+            description: resolvedDescription,
+            merchant: draft.merchant,
+            date: date,
+            createdAt: now,
+            updatedAt: now,
+            splitRule: splitRule,
+            editHistory: [],
+            isSettled: false,
+            notes: nil,
+            isRecurringInstance: false,
+            recurringTemplateID: nil,
+            receiptImageData: retention.shouldStoreNewReceipts ? draft.imageData : nil,
+            lineItems: lineItems,
+            softDeletedAt: nil
+        )
 
-        for bucket in buckets {
-            let bucketItems = bucket.items
-            let lineItems = bucketItems.map { item -> LineItem in
-                var li = item.lineItem
-                // Make the per-bucket expense self-consistent: every line
-                // item it contains carries the bucket's category.
-                li.category = bucket.category
-                return li
-            }
-            let total = lineItems.reduce(Decimal.zero) { $0 + $1.amount }
-            guard total > 0 else { continue }
+        try await expenses.create(expense)
 
-            let splitRule = Self.makeSplitRule(
-                lineItems: lineItems,
-                activeIDs: activeIDs,
-                paidBy: me,
-                total: total
-            )
-
-            // Description is just the merchant (or whatever the user typed).
-            // No " · Groceries" suffix — the category icon on each row
-            // already tells split-receipt entries apart visually.
-            let resolvedDescription = description.isEmpty
-                ? (draft.merchant ?? "Receipt")
-                : description
-
-            let expense = Expense(
-                id: UUID(),
-                householdID: householdID,
-                loggedByUserID: me,
-                amount: total,
-                currency: "USD",
-                category: bucket.category,
-                description: resolvedDescription,
-                merchant: draft.merchant,
-                date: date,
-                createdAt: now,
-                updatedAt: now,
-                splitRule: splitRule,
-                editHistory: [],
-                isSettled: false,
-                notes: nil,
-                isRecurringInstance: false,
-                recurringTemplateID: nil,
-                receiptImageData: storeImage ? draft.imageData : nil,
-                lineItems: lineItems,
-                softDeletedAt: nil
-            )
-
-            try await expenses.create(expense)
-            created.append(expense)
-
-            // Per-bucket SharedItemRule upserts so future scans pre-fill
-            // each known item against the right category.
-            for item in bucketItems {
-                guard !item.lineItem.normalizedItemName.isEmpty else { continue }
-                switch item.rememberChoice {
-                case .justThisTime:
-                    continue
-                case .alwaysShared:
-                    try? await sharedItemRuleService.upsert(
-                        normalizedItemName: item.lineItem.normalizedItemName,
-                        ruleType: .alwaysShared,
-                        category: bucket.category
-                    )
-                case .alwaysAssignedTo(let uid):
-                    try? await sharedItemRuleService.upsert(
-                        normalizedItemName: item.lineItem.normalizedItemName,
-                        ruleType: .alwaysAssignedTo(userID: uid),
-                        category: bucket.category
-                    )
-                }
+        for item in items {
+            guard !item.lineItem.normalizedItemName.isEmpty else { continue }
+            let itemCategory = item.lineItem.category ?? topCategory
+            switch item.rememberChoice {
+            case .justThisTime:
+                continue
+            case .alwaysShared:
+                try? await sharedItemRuleService.upsert(
+                    normalizedItemName: item.lineItem.normalizedItemName,
+                    ruleType: .alwaysShared,
+                    category: itemCategory
+                )
+            case .alwaysAssignedTo(let uid):
+                try? await sharedItemRuleService.upsert(
+                    normalizedItemName: item.lineItem.normalizedItemName,
+                    ruleType: .alwaysAssignedTo(userID: uid),
+                    category: itemCategory
+                )
             }
         }
 
-        return created
+        return expense
     }
 
     /// Builds the per-Expense split rule from its own line items, mirroring
