@@ -149,44 +149,92 @@ enum LineItemParser {
 
     private static func parseCostco(lines: [OCRLine], merchant: String) -> ParsedReceipt? {
         var items: [LineItem] = []
+        var seen: Set<String> = []          // dedupe key = "sku|price"
         var total: Decimal?
+
+        func ingest(name: String, amount: Decimal, sku: String?) {
+            let cleaned = name.trimmingCharacters(in: .whitespaces)
+            guard !cleaned.isEmpty else { return }
+            let key = "\(sku ?? cleaned.lowercased())|\(amount)"
+            guard !seen.contains(key) else { return }
+            seen.insert(key)
+            items.append(makeLineItem(name: cleaned, amount: amount))
+        }
 
         for line in lines {
             let text = line.text.trimmingCharacters(in: .whitespaces)
             guard !text.isEmpty else { continue }
 
             // Stop pulling line items once we hit the totals block.
-            if text.uppercased().contains("SUBTOTAL")
-                || text.uppercased().contains("TOTAL TAX")
-                || text.uppercased().contains("BOTTOM OF BASKET") {
-                // Don't break — KS TOWEL / KS BATH come AFTER "Bottom of
-                // Basket" in real Costco receipts. Just skip this line.
+            let upper = text.uppercased()
+            if upper.contains("SUBTOTAL") || upper.contains("TOTAL TAX") {
                 if let t = matchCostcoTotal(text) { total = t }
                 continue
             }
+            // Don't skip "Bottom of Basket" entirely — KS TOWEL / KS BATH
+            // come AFTER it on real Costco receipts. Just don't try to
+            // parse the divider line itself.
+            if upper.contains("BOTTOM OF BASKET") { continue }
 
-            if let (name, amount) = matchCostcoItem(text) {
-                let cleaned = name.trimmingCharacters(in: .whitespaces)
-                guard !cleaned.isEmpty else { continue }
-                items.append(makeLineItem(name: cleaned, amount: amount))
+            // Pass 1: clean single-item-per-line match.
+            if let (name, amount, sku) = matchCostcoItemWithSKU(text) {
+                ingest(name: name, amount: amount, sku: sku)
+                continue
+            }
+
+            // Pass 2: multi-item-per-line fallback. Vision sometimes
+            // concatenates two adjacent receipt rows into one OCR line
+            // (typical for short item names). Scan globally for every
+            // `{SKU} {NAME} {PRICE}` occurrence and emit each.
+            let multis = matchAllCostcoItemsInLine(text)
+            for (name, amount, sku) in multis {
+                ingest(name: name, amount: amount, sku: sku)
             }
         }
 
-        // If the Costco-specific pass found nothing useful, fall through to
-        // the generic parser by returning nil. Otherwise commit our result.
         guard !items.isEmpty else { return nil }
         return ParsedReceipt(merchant: merchant, items: items, total: total)
     }
 
-    private static func matchCostcoItem(_ text: String) -> (String, Decimal)? {
+    private static func matchCostcoItemWithSKU(_ text: String) -> (String, Decimal, String)? {
         let range = NSRange(text.startIndex..., in: text)
         guard let match = costcoLineRegex.firstMatch(in: text, range: range),
               match.numberOfRanges == 4,
+              let skuRange = Range(match.range(at: 1), in: text),
               let nameRange = Range(match.range(at: 2), in: text),
               let priceRange = Range(match.range(at: 3), in: text),
               let amount = Decimal(string: String(text[priceRange]))
         else { return nil }
-        return (String(text[nameRange]), amount)
+        return (String(text[nameRange]), amount, String(text[skuRange]))
+    }
+
+    /// Used for the multi-item fallback. The regex below is the same
+    /// pattern as `costcoLineRegex` but unanchored, so we can scan the
+    /// entire line for every occurrence — handy when Vision merges two
+    /// receipt rows into one OCR line.
+    private static let costcoLineRegexUnanchored: NSRegularExpression = {
+        try! NSRegularExpression(
+            pattern: #"(\d{4,7})\s+(.*?[A-Za-z][^\n]*?)\s+\$?(\d+\.\d{2})"#,
+            options: []
+        )
+    }()
+
+    private static func matchAllCostcoItemsInLine(_ text: String) -> [(String, Decimal, String)] {
+        let nsText = text as NSString
+        let range = NSRange(location: 0, length: nsText.length)
+        let matches = costcoLineRegexUnanchored.matches(in: text, range: range)
+        guard matches.count >= 2 else { return [] }  // single-match handled by pass 1
+
+        var results: [(String, Decimal, String)] = []
+        for match in matches where match.numberOfRanges == 4 {
+            guard let skuRange = Range(match.range(at: 1), in: text),
+                  let nameRange = Range(match.range(at: 2), in: text),
+                  let priceRange = Range(match.range(at: 3), in: text),
+                  let amount = Decimal(string: String(text[priceRange]))
+            else { continue }
+            results.append((String(text[nameRange]), amount, String(text[skuRange])))
+        }
+        return results
     }
 
     private static func matchCostcoTotal(_ text: String) -> Decimal? {

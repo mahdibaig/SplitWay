@@ -26,6 +26,7 @@ struct ReceiptReviewView: View {
     @State private var selectedIDs: Set<UUID> = []
     @State private var showBulkAssign = false
     @State private var showBulkCategory = false
+    @State private var showOCRDebug = false
 
     var body: some View {
         ScrollView {
@@ -37,6 +38,7 @@ struct ReceiptReviewView: View {
                 categoryCard
                 dateCard
                 itemsSection
+                ocrDebugSection
             }
             .padding(.horizontal, Spacing.screenH)
             .padding(.vertical, 16)
@@ -242,6 +244,60 @@ struct ReceiptReviewView: View {
         }
         .padding(Spacing.cardPad)
         .background(Color.surface, in: .rect(cornerRadius: Radius.card))
+    }
+
+    /// Collapsible panel showing exactly what Vision OCR returned. Helps
+    /// debug "why is this item missing?" — if a line is in the OCR output
+    /// but not in the parsed items, it's a parser issue; if it's not in
+    /// the OCR output at all, Vision dropped it (try a better photo).
+    @ViewBuilder
+    private var ocrDebugSection: some View {
+        let lines = draft.rawLines.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+        if !lines.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                Button {
+                    showOCRDebug.toggle()
+                } label: {
+                    HStack {
+                        Image(systemName: "eye")
+                            .font(.caption)
+                            .foregroundStyle(Color.text2)
+                        Text(showOCRDebug ? "Hide raw OCR text" : "View raw OCR text (\(lines.count) lines)")
+                            .font(.cardLabel)
+                            .foregroundStyle(Color.text2)
+                        Spacer()
+                        Image(systemName: showOCRDebug ? "chevron.up" : "chevron.down")
+                            .font(.caption2)
+                            .foregroundStyle(Color.text3)
+                    }
+                }
+                .buttonStyle(.plain)
+
+                if showOCRDebug {
+                    Text("If an item is missing from the list above but appears below, the parser missed it. If it's not below either, Vision didn't see it (try a clearer photo).")
+                        .font(.caption)
+                        .foregroundStyle(Color.text3)
+                    VStack(alignment: .leading, spacing: 2) {
+                        ForEach(Array(lines.enumerated()), id: \.offset) { idx, line in
+                            HStack(alignment: .top, spacing: 6) {
+                                Text("\(idx + 1).")
+                                    .font(.caption.monospacedDigit())
+                                    .foregroundStyle(Color.text3)
+                                    .frame(width: 24, alignment: .trailing)
+                                Text(line)
+                                    .font(.caption.monospaced())
+                                    .foregroundStyle(Color.text1)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                        }
+                    }
+                    .padding(8)
+                    .background(Color.surface2, in: .rect(cornerRadius: 8))
+                }
+            }
+            .padding(Spacing.cardPad)
+            .background(Color.surface, in: .rect(cornerRadius: Radius.card))
+        }
     }
 
     private var itemsSection: some View {

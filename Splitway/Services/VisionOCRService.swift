@@ -24,18 +24,24 @@ enum VisionOCRService {
     static func recognizeText(in image: UIImage) async -> [OCRLine] {
         guard let original = image.cgImage else { return [] }
 
-        // Try the preprocessed image first. If preprocessing somehow nukes
-        // text (e.g. wrong rectangle detected), fall back to the original.
+        // Run OCR on BOTH the preprocessed and the raw image, then merge
+        // unique lines. Preprocessing wins on faded ink and slight angle;
+        // raw wins when the receipt is crinkled and rectangle detection
+        // over-corrects, or when contrast eats fine text. Either pass
+        // catching an item is enough.
         let preprocessed = preprocess(original)
-        let candidates: [CGImage] = preprocessed.map { [$0, original] } ?? [original]
+        var allLines: [OCRLine] = []
 
-        for cg in candidates {
-            let observations = await runRecognition(on: cg)
-            if !observations.isEmpty {
-                return groupIntoLines(observations)
-            }
+        if let pp = preprocessed {
+            let obs = await runRecognition(on: pp)
+            allLines.append(contentsOf: groupIntoLines(obs))
         }
-        return []
+        let rawObs = await runRecognition(on: original)
+        let rawLines = groupIntoLines(rawObs)
+        for line in rawLines where !allLines.contains(where: { $0.text == line.text }) {
+            allLines.append(line)
+        }
+        return allLines
     }
 
     private static func runRecognition(on cgImage: CGImage) async -> [VNRecognizedTextObservation] {
@@ -114,10 +120,14 @@ enum VisionOCRService {
     /// confident rectangle is found.
     private static func perspectiveCorrect(_ image: CIImage) -> CIImage? {
         let request = VNDetectRectanglesRequest()
-        request.minimumConfidence = 0.7
-        request.minimumAspectRatio = 0.2      // receipts are very tall
+        // Lenient settings so crinkled / partially-flat receipts still get
+        // perspective-corrected when possible. If none match, we silently
+        // skip correction (the dual-pass OCR in the caller still runs the
+        // raw image).
+        request.minimumConfidence = 0.5
+        request.minimumAspectRatio = 0.15     // receipts are very tall
         request.maximumAspectRatio = 1.0
-        request.minimumSize = 0.4             // receipt fills most of frame
+        request.minimumSize = 0.25            // receipt may not fill frame
         request.maximumObservations = 1
 
         let handler = VNImageRequestHandler(ciImage: image, options: [:])
