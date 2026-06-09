@@ -35,7 +35,12 @@ extension UserEntity {
             avatarImageData: avatarImageData,
             groupID: group?.id.map(GroupID.init),
             joinedAt: joinedAt,
-            isArchived: isArchived
+            isArchived: isArchived,
+            venmoHandle: venmoHandle,
+            cashAppCashtag: cashAppCashtag,
+            paypalMeUsername: paypalMeUsername,
+            zelleContact: zelleContact,
+            preferredPaymentMethod: preferredPaymentMethod.flatMap { PaymentMethod(rawValue: $0) }
         )
     }
 }

@@ -72,6 +72,35 @@ final class HouseholdService: ObservableObject {
         return household
     }
 
+    /// Updates payment-app handles on any member of the current household.
+    /// In v1 the local user can edit anyone's handles (so you can enter
+    /// "Sarah's Venmo @sarahb" on her behalf before CloudKit sharing lands).
+    /// Refreshes the local cache so views observing membership pick up the
+    /// change without an extra fetch from the caller.
+    func updatePaymentInfo(
+        userID: UserID,
+        venmoHandle: String?,
+        cashAppCashtag: String?,
+        paypalMeUsername: String?,
+        zelleContact: String?,
+        preferredMethod: PaymentMethod?
+    ) async throws {
+        try await users.updatePaymentInfo(
+            userID: userID,
+            venmoHandle: venmoHandle,
+            cashAppCashtag: cashAppCashtag,
+            paypalMeUsername: paypalMeUsername,
+            zelleContact: zelleContact,
+            preferredMethod: preferredMethod
+        )
+        if let householdID = currentHousehold?.id {
+            let refreshed = try? await users.fetchMembers(householdID: householdID)
+            if userID == currentMember?.id {
+                currentMember = refreshed?.first { $0.id == userID } ?? currentMember
+            }
+        }
+    }
+
     func updateMyProfile(displayName: String?, avatarEmoji: String?, avatarImageData: Data??) async throws {
         guard let userID = currentMember?.id else { return }
         if let displayName {

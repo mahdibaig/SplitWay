@@ -14,6 +14,7 @@ struct SettingsView: View {
     @State private var showProfileSheet = false
     @State private var showPaywall = false
     @State private var showManageSubscriptions = false
+    @State private var paymentEditMember: HouseholdMember?
 
     var body: some View {
         NavigationStack {
@@ -133,10 +134,38 @@ struct SettingsView: View {
                     }
                 }
 
-                Section("Members") {
+                Section {
                     ForEach(membersService.members) { m in
-                        LabeledContent(m.displayName, value: m.isArchived ? "Archived" : "Active")
+                        Button {
+                            paymentEditMember = m
+                        } label: {
+                            HStack {
+                                Text(m.displayName)
+                                    .foregroundStyle(Color.text1)
+                                Spacer()
+                                if m.availablePaymentMethods.isEmpty {
+                                    Text(m.isArchived ? "Archived" : "Add payment info")
+                                        .font(.caption)
+                                        .foregroundStyle(Color.text3)
+                                } else {
+                                    HStack(spacing: 4) {
+                                        ForEach(m.availablePaymentMethods) { method in
+                                            Image(systemName: method.sfSymbol)
+                                                .font(.caption)
+                                                .foregroundStyle(Color.brand)
+                                        }
+                                    }
+                                }
+                                Image(systemName: "chevron.right")
+                                    .font(.caption2)
+                                    .foregroundStyle(Color.text3)
+                            }
+                        }
                     }
+                } header: {
+                    Text("Members")
+                } footer: {
+                    Text("Tap a member to set their Venmo, Cash App, PayPal, or Zelle handle. Settle Up uses these to open the right app with the amount prefilled.")
                 }
 
                 if let workingError {
@@ -207,6 +236,12 @@ struct SettingsView: View {
             }
             .sheet(isPresented: $showProfileSheet) {
                 ProfileEditSheet()
+            }
+            .sheet(item: $paymentEditMember) { member in
+                MemberPaymentEditSheet(
+                    member: member,
+                    onSaved: { Task { await membersService.refresh() } }
+                )
             }
             .sheet(isPresented: $showPaywall) {
                 PaywallView(feature: nil)

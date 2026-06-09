@@ -107,10 +107,15 @@
         <attribute name="archivedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="avatarEmoji" optional="YES" attributeType="String"/>
         <attribute name="avatarImageData" optional="YES" attributeType="Binary" allowsExternalBinaryDataStorage="YES"/>
+        <attribute name="cashAppCashtag" optional="YES" attributeType="String"/>
         <attribute name="displayName" optional="YES" attributeType="String" defaultValueString=""/>
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="isArchived" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
         <attribute name="joinedAt" optional="YES" attributeType="Date" defaultDateTimeInterval="0" usesScalarValueType="NO"/>
+        <attribute name="paypalMeUsername" optional="YES" attributeType="String"/>
+        <attribute name="preferredPaymentMethod" optional="YES" attributeType="String"/>
+        <attribute name="venmoHandle" optional="YES" attributeType="String"/>
+        <attribute name="zelleContact" optional="YES" attributeType="String"/>
         <relationship name="group" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Group" inverseName="members" inverseEntity="Group"/>
         <relationship name="household" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Household" inverseName="members" inverseEntity="Household"/>
     </entity>

@@ -48,6 +48,9 @@ private struct SettleUpContent: View {
     @ObservedObject var viewModel: SettleUpViewModel
     @EnvironmentObject private var membersService: MembersService
 
+    @State private var zelleAlert: String? = nil
+    @State private var editingMember: HouseholdMember? = nil
+
     var body: some View {
         ScrollView {
             VStack(spacing: Spacing.cardGap) {
@@ -112,7 +115,33 @@ private struct SettleUpContent: View {
                 .foregroundStyle(Color.text2)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
+            paymentActionsRow(for: payment)
+                .disabled(viewModel.isWorking)
+        }
+        .padding(Spacing.cardPad)
+        .background(Color.surface, in: .rect(cornerRadius: Radius.card))
+    }
+
+    /// Renders the per-row action buttons. The primary action depends on
+    /// whether the recipient has a payment handle saved: with a handle we
+    /// show their preferred app as the big button; without one we show
+    /// "Mark paid" and a tiny hint to add a handle.
+    @ViewBuilder
+    private func paymentActionsRow(for payment: SimplifiedPayment) -> some View {
+        let recipient = membersService.members.first { $0.id == payment.to }
+        let methods = recipient?.availablePaymentMethods ?? []
+
+        VStack(spacing: 8) {
             HStack(spacing: 8) {
+                if let primary = methods.first, let recipient {
+                    paymentButton(
+                        method: primary,
+                        recipient: recipient,
+                        payment: payment,
+                        primary: true
+                    )
+                }
+
                 Button {
                     Task { await viewModel.markPaid(payment) }
                 } label: {
@@ -120,27 +149,94 @@ private struct SettleUpContent: View {
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
-                        .background(Color.cta, in: .rect(cornerRadius: Radius.pill))
-                        .foregroundStyle(Color.ctaText)
-                }
-
-                Button {
-                    if let url = URL(string: "zelle://"), UIApplication.shared.canOpenURL(url) {
-                        UIApplication.shared.open(url)
-                    }
-                } label: {
-                    Text("Open Zelle")
-                        .font(.cardLabel)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(Color.surface2, in: .rect(cornerRadius: Radius.pill))
-                        .foregroundStyle(Color.text1)
+                        .background(methods.isEmpty ? Color.cta : Color.surface2,
+                                    in: .rect(cornerRadius: Radius.pill))
+                        .foregroundStyle(methods.isEmpty ? Color.ctaText : Color.text1)
                 }
             }
-            .disabled(viewModel.isWorking)
+
+            // Additional methods, if any beyond the primary, as smaller chips.
+            if methods.count > 1, let recipient {
+                HStack(spacing: 8) {
+                    ForEach(Array(methods.dropFirst()), id: \.rawValue) { method in
+                        paymentButton(
+                            method: method,
+                            recipient: recipient,
+                            payment: payment,
+                            primary: false
+                        )
+                    }
+                    Spacer(minLength: 0)
+                }
+            }
+
+            if methods.isEmpty, let recipient {
+                Button {
+                    editingMember = recipient
+                } label: {
+                    Text("Add \(recipient.displayName)'s payment info")
+                        .font(.caption)
+                        .foregroundStyle(Color.brand)
+                }
+            }
         }
-        .padding(Spacing.cardPad)
-        .background(Color.surface, in: .rect(cornerRadius: Radius.card))
+        .alert("Zelle", isPresented: Binding(
+            get: { zelleAlert != nil },
+            set: { if !$0 { zelleAlert = nil } }
+        )) {
+            Button("OK") { zelleAlert = nil }
+        } message: {
+            Text(zelleAlert ?? "")
+        }
+        .sheet(item: $editingMember) { member in
+            MemberPaymentEditSheet(member: member, onSaved: {})
+        }
+    }
+
+    @ViewBuilder
+    private func paymentButton(
+        method: PaymentMethod,
+        recipient: HouseholdMember,
+        payment: SimplifiedPayment,
+        primary: Bool
+    ) -> some View {
+        Button {
+            launchPayment(method: method, recipient: recipient, amount: payment.amount)
+        } label: {
+            if primary {
+                Label(method.displayName, systemImage: method.sfSymbol)
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(Color.cta, in: .rect(cornerRadius: Radius.pill))
+                    .foregroundStyle(Color.ctaText)
+            } else {
+                Label(method.displayName, systemImage: method.sfSymbol)
+                    .font(.caption.weight(.medium))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color.brandSoft, in: .capsule)
+                    .foregroundStyle(Color.brand2)
+            }
+        }
+    }
+
+    private func launchPayment(method: PaymentMethod, recipient: HouseholdMember, amount: Decimal) {
+        let action = PaymentLinkBuilder.action(
+            for: method,
+            recipient: recipient,
+            amount: amount,
+            note: "Splitway settle up"
+        )
+        switch action {
+        case .openURL(let url):
+            UIApplication.shared.open(url)
+        case .copyAndInstruct(let text, let alertBody):
+            UIPasteboard.general.string = text
+            zelleAlert = alertBody
+        case nil:
+            break
+        }
     }
 
     private var howItWorksCard: some View {

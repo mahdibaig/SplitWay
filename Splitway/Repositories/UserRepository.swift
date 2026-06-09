@@ -13,6 +13,14 @@ protocol UserRepository: Sendable {
     func updateDisplayName(_ name: String, userID: UserID) async throws
     func updateAvatarEmoji(_ emoji: String?, userID: UserID) async throws
     func updateAvatarImage(_ data: Data?, userID: UserID) async throws
+    func updatePaymentInfo(
+        userID: UserID,
+        venmoHandle: String?,
+        cashAppCashtag: String?,
+        paypalMeUsername: String?,
+        zelleContact: String?,
+        preferredMethod: PaymentMethod?
+    ) async throws
     func archiveMember(userID: UserID) async throws
 }
 
@@ -92,6 +100,33 @@ final class CoreDataUserRepository: UserRepository {
                 throw RepositoryError.notFound
             }
             entity.avatarImageData = data
+            try ctx.save()
+        }
+    }
+
+    func updatePaymentInfo(
+        userID: UserID,
+        venmoHandle: String?,
+        cashAppCashtag: String?,
+        paypalMeUsername: String?,
+        zelleContact: String?,
+        preferredMethod: PaymentMethod?
+    ) async throws {
+        try await persistence.performBackground { ctx in
+            guard let entity = try Self.findUser(id: userID, in: ctx) else {
+                throw RepositoryError.notFound
+            }
+            // Normalize: trim whitespace + treat empty as nil so the
+            // availablePaymentMethods logic stays clean.
+            func clean(_ s: String?) -> String? {
+                let t = s?.trimmingCharacters(in: .whitespacesAndNewlines)
+                return (t?.isEmpty == false) ? t : nil
+            }
+            entity.venmoHandle = clean(venmoHandle)
+            entity.cashAppCashtag = clean(cashAppCashtag)
+            entity.paypalMeUsername = clean(paypalMeUsername)
+            entity.zelleContact = clean(zelleContact)
+            entity.preferredPaymentMethod = preferredMethod?.rawValue
             try ctx.save()
         }
     }
