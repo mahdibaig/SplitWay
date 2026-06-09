@@ -105,7 +105,11 @@ struct AssistantContextBuilder {
         let total = expenses.reduce(Decimal.zero) { $0 + $1.amount }
         var byCategory: [String: Decimal] = [:]
         for e in expenses {
-            byCategory[e.category.displayName, default: 0] += e.amount
+            // Walk per-line-item categories so a Costco trip is split
+            // correctly across groceries / household supplies / etc.
+            for (cat, amt) in e.categoryDistribution(of: e.amount) {
+                byCategory[cat.displayName, default: 0] += amt
+            }
         }
         return SnapshotMonth(
             label: label,

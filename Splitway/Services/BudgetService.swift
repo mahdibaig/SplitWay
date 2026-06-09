@@ -55,10 +55,17 @@ final class BudgetService: ObservableObject {
             .filter { $0.softDeletedAt == nil }
             .filter { interval.contains($0.date) }
 
+        // Pre-compute category distribution for every expense once.
+        // Walking line-item categories means a Costco trip's household-
+        // supplies portion counts against the household-supplies budget,
+        // not the (dominant) groceries one.
+        let perExpenseByCategory: [[ExpenseCategory: Decimal]] = activeExpenses
+            .map { $0.categoryDistribution(of: $0.amount) }
+
         return budgetsList.map { budget in
-            let spent = activeExpenses
-                .filter { $0.category == budget.category }
-                .reduce(Decimal.zero) { $0 + $1.amount }
+            let spent = perExpenseByCategory.reduce(Decimal.zero) {
+                $0 + ($1[budget.category] ?? 0)
+            }
             return BudgetProgress(
                 category: budget.category,
                 monthlyLimit: budget.monthlyLimit,

@@ -499,7 +499,13 @@ private struct ReportSnapshot {
         var sums: [ExpenseCategory: Decimal] = [:]
         for e in monthly {
             let c = contribution(of: e)
-            if c > 0 { sums[e.category, default: 0] += c }
+            guard c > 0 else { continue }
+            // Walks per-line-item categories when available so a Costco
+            // trip lands in groceries + household supplies (etc.) rather
+            // than the single headline category.
+            for (cat, amt) in e.categoryDistribution(of: c) {
+                sums[cat, default: 0] += amt
+            }
         }
         self.byCategory = sums
             .map { CategoryBucket(category: $0.key, amount: $0.value) }
