@@ -1,9 +1,17 @@
 # Splitway assistant proxy
 
-Cloudflare Worker that sits between the Splitway iOS app and DeepSeek's
-chat-completions endpoint. Reason it exists: the DeepSeek API key never ships
-in the iOS binary, we can rotate it in seconds without an App Update, and we
-get per-IP rate limiting cheaply.
+Cloudflare Worker that sits between the Splitway iOS app and two upstream
+providers:
+
+- **DeepSeek** — chat assistant + receipt line-item name cleanup
+- **OpenAI GPT-4o mini** — vision OCR for receipt scanning (line items +
+  categories in one call)
+
+Reason it exists: API keys never ship in the iOS binary, we can rotate
+them in seconds without an App Update, and we get per-IP rate limiting
+cheaply. The OpenAI vision path is rate-limited tighter than chat
+(default 30 scans/IP/day) because each call costs real money
+(~$0.001-0.003).
 
 ## What gets deployed where
 
@@ -42,6 +50,13 @@ wrangler secret put APP_SHARED_SECRET
 #    paste a long random string. Generate one with:
 #      openssl rand -hex 32
 #    Save this. You'll paste it into Xcode too.
+
+# 3a. (Optional but recommended) OpenAI key for receipt vision scanning.
+#     The /v1/vision/receipt endpoint forwards to GPT-4o mini which does
+#     OCR + line-item extraction + categorization in one call. If this
+#     key isn't set, the app falls back to local Apple Vision OCR.
+wrangler secret put OPENAI_API_KEY
+#    paste your OpenAI key (starts with "sk-..." from platform.openai.com).
 
 # 4. (Recommended) per-IP rate limit. Create a KV namespace:
 wrangler kv namespace create RATE_LIMIT_KV

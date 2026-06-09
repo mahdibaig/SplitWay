@@ -24,26 +24,91 @@ final class ReceiptScanService: ObservableObject {
         self.retention = retention
     }
 
-    /// Compresses the image, runs Vision OCR, parses lines, batches the items
-    /// through the LLM for name cleanup (one call per scan, cached), applies
-    /// any matching `SharedItemRule`s to pre-fill assignments, returns a draft.
+    /// Scans a receipt photo and returns a `ReceiptDraft`. Primary path is
+    /// the cloud vision endpoint (GPT-4o mini via the proxy) which does
+    /// OCR + line-item extraction + categorization in one call. If that
+    /// fails for any reason (proxy not configured, rate-limited, network
+    /// blip, upstream error), falls back to the local Apple-Vision OCR +
+    /// Costco parser + LLM cleanup pipeline so the user still gets a
+    /// usable draft. Either way the cloud's draft includes a `scanError`
+    /// the UI can surface if the fallback path was taken.
     func scan(image: UIImage) async -> ReceiptDraft {
         await sharedItemRuleService.refresh()
-        let processed = ReceiptImage.processed(from: image) ?? Data()
+        let processedImage = ReceiptImage.processed(from: image) ?? Data()
+
+        // Primary: cloud vision.
+        do {
+            let cloud = try await CloudReceiptScanner().scan(image: image)
+            return await buildDraft(from: cloud, imageData: processedImage)
+        } catch {
+            AppLog.lifecycle.error("Cloud receipt scan failed; falling back to local Vision: \(error.localizedDescription, privacy: .public)")
+            return await fallbackScan(
+                image: image,
+                imageData: processedImage,
+                cloudError: error
+            )
+        }
+    }
+
+    /// Maps the cloud scanner's flat JSON into a `ReceiptDraft`, applying
+    /// any matching `SharedItemRule`s so assignees pre-fill.
+    private func buildDraft(from cloud: CloudReceiptScanner.Result, imageData: Data) async -> ReceiptDraft {
+        var reviewItems: [ReviewItem] = []
+        for entry in cloud.items {
+            let category = entry.category.flatMap { ExpenseCategory.lookup($0) }
+            let normalized = Self.normalize(entry.name)
+            var lineItem = LineItem(
+                id: UUID(),
+                itemName: entry.name,
+                displayName: entry.name,
+                normalizedItemName: normalized,
+                amount: entry.amount,
+                quantity: 1,
+                assignedToUserIDs: [],
+                category: category
+            )
+            let rule = sharedItemRuleService.match(for: normalized)
+            if let rule {
+                switch rule.ruleType {
+                case .alwaysShared:
+                    lineItem.assignedToUserIDs = []
+                case .alwaysAssignedTo(let uid):
+                    lineItem.assignedToUserIDs = [uid]
+                }
+            }
+            reviewItems.append(ReviewItem(
+                lineItem: lineItem,
+                matchedRule: rule,
+                rememberChoice: .justThisTime,
+                // wasAICleaned tells the row to show the "AI" pill so the
+                // user can revert to the raw OCR text. Cloud-scanned items
+                // are always AI-named by definition, so always true.
+                wasAICleaned: true
+            ))
+        }
+        let total = cloud.total
+            ?? reviewItems.reduce(Decimal.zero) { $0 + $1.lineItem.amount }
+        return ReceiptDraft(
+            imageData: imageData,
+            merchant: cloud.merchant,
+            items: reviewItems,
+            parsedTotal: total,
+            // Raw OCR lines aren't available from the cloud path. Synthesize
+            // a compact summary so the "View raw OCR text" debug panel
+            // still shows something useful.
+            rawLines: cloud.items.map { "\($0.name)  \($0.amount)" }
+        )
+    }
+
+    /// Old local pipeline, used as fallback when the cloud path fails.
+    private func fallbackScan(image: UIImage, imageData: Data, cloudError: Error) async -> ReceiptDraft {
         let lines = await VisionOCRService.recognizeText(in: image)
         let parsed = LineItemParser.parse(lines: lines)
-
-        // AI cleanup pass on the raw line items, with caching. Merchant
-        // context lets the model treat grocery-store prepared food
-        // (rotisserie, deli, take-and-bake) as groceries instead of
-        // "diningOut" — diningOut is restaurants only.
         let (cleanedItems, aiCleanedIDs) = await cleanupService.cleanup(
             items: parsed.items,
             merchant: parsed.merchant
         )
 
-        // Apply rule pre-fill per item AFTER cleanup so SharedItemRule lookups
-        // hit consistently using the cleaned display name.
         var enrichedItems: [ReviewItem] = []
         for item in cleanedItems {
             var lineItem = item
@@ -69,12 +134,27 @@ final class ReceiptScanService: ObservableObject {
             ?? parsed.items.reduce(.zero) { $0 + $1.amount }
 
         return ReceiptDraft(
-            imageData: processed,
+            imageData: imageData,
             merchant: parsed.merchant,
             items: enrichedItems,
             parsedTotal: total,
-            rawLines: lines.map(\.text)
+            rawLines: lines.map(\.text),
+            fallbackNotice: Self.fallbackNotice(for: cloudError)
         )
+    }
+
+    private static func fallbackNotice(for error: Error) -> String {
+        if let scanError = error as? CloudReceiptScanner.ScanError {
+            switch scanError {
+            case .rateLimited(let limit):
+                return "Cloud scan limit reached for today (\(limit)). Showing local OCR results — accuracy may be lower."
+            case .visionNotConfigured, .proxyNotConfigured:
+                return "Cloud scanning isn't available; using local OCR. Accuracy may be lower."
+            default:
+                return "Cloud scan failed; using local OCR as a fallback. Accuracy may be lower."
+            }
+        }
+        return "Cloud scan failed; using local OCR as a fallback. Accuracy may be lower."
     }
 
     private static func normalize(_ raw: String) -> String {
@@ -261,6 +341,9 @@ struct ReceiptDraft: Sendable {
     var items: [ReviewItem]
     var parsedTotal: Decimal
     var rawLines: [String]
+    /// Set when the cloud scanner failed and we fell back to local OCR, so
+    /// the review screen can warn the user that accuracy may be lower.
+    var fallbackNotice: String? = nil
 }
 
 /// Receipt image compression. Bigger than avatars because users need to read

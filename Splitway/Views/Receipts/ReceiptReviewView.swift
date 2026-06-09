@@ -134,14 +134,25 @@ struct ReceiptReviewView: View {
 
     @ViewBuilder
     private var recognitionBanner: some View {
+        if let notice = draft.fallbackNotice {
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(Color.warn)
+                Text(notice)
+                    .font(.cardLabel)
+                    .foregroundStyle(Color.text1)
+                Spacer()
+            }
+            .padding(Spacing.cardPad)
+            .background(Color.warnSoft, in: .rect(cornerRadius: Radius.card))
+        }
+
         let known = items.filter { $0.matchedRule != nil }.count
         let new = items.count - known
-        let distinctCats = Set(items.compactMap { $0.lineItem.category })
-        let willSplit = distinctCats.count >= 2
         if !items.isEmpty {
             HStack(alignment: .top, spacing: 10) {
-                Image(systemName: willSplit ? "rectangle.split.3x1" : "sparkles")
-                    .foregroundStyle(willSplit ? Color.brand : Color.success)
+                Image(systemName: "sparkles")
+                    .foregroundStyle(Color.success)
                 VStack(alignment: .leading, spacing: 2) {
                     if known == 0 {
                         Text("\(new) new item\(new == 1 ? "" : "s") to review.")
@@ -156,23 +167,14 @@ struct ReceiptReviewView: View {
                             .font(.cardLabel.weight(.medium))
                             .foregroundStyle(Color.text1)
                     }
-                    if willSplit {
-                        Text("Mixed categories detected. Saves as \(distinctCats.count) separate expenses so reports stay accurate. Tap a category chip to change it.")
-                            .font(.caption)
-                            .foregroundStyle(Color.text2)
-                    } else {
-                        Text("Tap a category chip below to change how an item is categorized.")
-                            .font(.caption)
-                            .foregroundStyle(Color.text2)
-                    }
+                    Text("Tap a category chip below to change how an item is categorized. Use Select for bulk actions.")
+                        .font(.caption)
+                        .foregroundStyle(Color.text2)
                 }
                 Spacer()
             }
             .padding(Spacing.cardPad)
-            .background(
-                (willSplit ? Color.brandSoft : Color.successSoft),
-                in: .rect(cornerRadius: Radius.card)
-            )
+            .background(Color.successSoft, in: .rect(cornerRadius: Radius.card))
         }
     }
 
