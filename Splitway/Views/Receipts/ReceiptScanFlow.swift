@@ -28,6 +28,7 @@ struct ReceiptScanFlow: View {
     @State private var pickedImage: UIImage?
     @State private var draft: ReceiptDraft?
     @State private var errorMessage: String?
+    @State private var showCamera: Bool = false
 
     var body: some View {
         NavigationStack {
@@ -65,6 +66,16 @@ struct ReceiptScanFlow: View {
             .onChange(of: photoItem) { _, newItem in
                 Task { await loadPickedPhoto(newItem) }
             }
+            .fullScreenCover(isPresented: $showCamera) {
+                DocumentScannerView(
+                    onScanned: { image in
+                        showCamera = false
+                        Task { await processCapturedImage(image) }
+                    },
+                    onCancel: { showCamera = false }
+                )
+                .ignoresSafeArea()
+            }
         }
     }
 
@@ -80,7 +91,7 @@ struct ReceiptScanFlow: View {
                 Text("Scan a receipt")
                     .font(.serifTitle)
                     .foregroundStyle(Color.text1)
-                Text("Pick a photo from your library. We'll pull out the line items and let you assign each one.")
+                Text("Use the camera for the best results, or pick an existing photo from your library.")
                     .font(.body)
                     .foregroundStyle(Color.text2)
                     .multilineTextAlignment(.center)
@@ -90,8 +101,10 @@ struct ReceiptScanFlow: View {
             Spacer()
 
             VStack(spacing: 12) {
-                PhotosPicker(selection: $photoItem, matching: .images) {
-                    Label("Choose from library", systemImage: "photo.on.rectangle")
+                Button {
+                    showCamera = true
+                } label: {
+                    Label("Scan with camera", systemImage: "camera.viewfinder")
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
@@ -99,7 +112,20 @@ struct ReceiptScanFlow: View {
                         .foregroundStyle(Color.ctaText)
                 }
 
-                Text("Custom camera with frame guides is coming in a later push. For now, drop a receipt image into the iOS Photos app.")
+                PhotosPicker(selection: $photoItem, matching: .images) {
+                    Label("Choose from library", systemImage: "photo.on.rectangle")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(Color.surface, in: .rect(cornerRadius: Radius.pill))
+                        .foregroundStyle(Color.text1)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: Radius.pill)
+                                .stroke(Color.borderSubtle, lineWidth: 1)
+                        )
+                }
+
+                Text("Tip: lay the receipt flat on a dark surface and let the scanner auto-capture. It will crop and flatten automatically.")
                     .font(.caption)
                     .foregroundStyle(Color.text3)
                     .multilineTextAlignment(.center)
@@ -117,10 +143,21 @@ struct ReceiptScanFlow: View {
             Text("Reading your receipt…")
                 .font(.cardTitle)
                 .foregroundStyle(Color.text1)
-            Text("Apple Vision is recognizing the text on-device.")
+            Text("Sending to the scanner. This takes a few seconds.")
                 .font(.cardLabel)
                 .foregroundStyle(Color.text2)
         }
+    }
+
+    /// Shared post-image-source handler. Called from both the photo
+    /// library path and the live camera (VNDocumentCameraViewController)
+    /// path so the rest of the flow doesn't care where the image came from.
+    private func processCapturedImage(_ image: UIImage) async {
+        step = .processing
+        pickedImage = image
+        let result = await receiptScanService.scan(image: image)
+        draft = result
+        step = .review
     }
 
     private func loadPickedPhoto(_ item: PhotosPickerItem?) async {

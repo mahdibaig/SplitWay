@@ -22,6 +22,8 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSCameraUsageDescription</key>
+	<string>Splitway uses the camera to scan receipts. Photos are processed on-device or via your assistant proxy and never stored on our servers.</string>
 	<key>SplitwayAssistantBaseURL</key>
 	<string>$(SPLITWAY_ASSISTANT_BASE_URL)</string>
 	<key>SplitwayAssistantSharedSecret</key>

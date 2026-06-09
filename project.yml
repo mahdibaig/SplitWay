@@ -49,6 +49,7 @@ targets:
         UIBackgroundModes:
           - remote-notification
         ITSAppUsesNonExemptEncryption: false
+        NSCameraUsageDescription: "Splitway uses the camera to scan receipts. Photos are processed on-device or via your assistant proxy and never stored on our servers."
         # Splitway assistant proxy (see proxy/README.md). The DeepSeek API key
         # never ships in the binary; instead the app POSTs to this Cloudflare
         # Worker, which injects the key server-side. Both values must match
