@@ -2,6 +2,11 @@ name = "splitway-assistant"
 main = "worker.js"
 compatibility_date = "2026-05-01"
 
+# Pin to the correct Cloudflare account so wrangler doesn't pick up a
+# stale account ID from local state on machine switches. This is the
+# account that owns the splitway-assistant worker.
+account_id = "398383e3f012ad82311deaab66e53882"
+
 # Secrets are NOT stored in this file. Set them with:
 #   wrangler secret put DEEPSEEK_API_KEY
 #   wrangler secret put APP_SHARED_SECRET
