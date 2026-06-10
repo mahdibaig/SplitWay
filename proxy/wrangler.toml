@@ -11,16 +11,17 @@ account_id = "398383e3f012ad82311deaab66e53882"
 #   wrangler secret put DEEPSEEK_API_KEY
 #   wrangler secret put APP_SHARED_SECRET
 #
-# Optional rate limit. Create the namespace with:
-#   wrangler kv namespace create RATE_LIMIT_KV
-# Then paste the printed id below and uncomment.
-# [[kv_namespaces]]
-# binding = "RATE_LIMIT_KV"
-# id = "<paste from wrangler output>"
+# Per-IP daily rate limit storage. This is the primary defense against a
+# leaked shared secret running up the provider bill — keep it bound.
+[[kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "97bbbbf561474f14b8c655157c305a03"
 
-# Optional override for the per-IP daily request cap (default 200).
+# Per-IP daily caps. Chat default 200, vision (receipt scans) default 30.
+# Uncomment to override.
 # [vars]
 # DAILY_LIMIT = "200"
+# VISION_DAILY_LIMIT = "30"
 
 # Optional custom domain. After adding api.splitway.app in the Cloudflare
 # dashboard, the worker is reachable at https://api.splitway.app/v1/chat/completions
