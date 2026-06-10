@@ -22,6 +22,11 @@ struct SettingsView: View {
                 if let household = householdService.currentHousehold {
                     Section("Household") {
                         LabeledContent("Name", value: household.name)
+                        NavigationLink {
+                            HouseholdSharingView()
+                        } label: {
+                            Label("Share household", systemImage: "person.2")
+                        }
                         Toggle("Groups", isOn: groupsBinding)
                         LabeledContent("Invite code", value: household.inviteCode)
                         Button("Regenerate invite code") {
