@@ -11,7 +11,7 @@ enum FeatureFlag: String, CaseIterable {
     case receiptOCR             // Vision OCR + line-item review
     case aiReceiptCleanup       // LLM name cleanup on scans
     case aiAssistant            // the assistant chips
-    case csvImportExport        // Splitwise import + CSV export
+    case csvImportExport        // CSV import + CSV export
     case cloudShare3Plus        // CloudKit sharing for 3+ members
 
     /// User-facing reason shown on the paywall when this feature is tapped.
@@ -23,7 +23,7 @@ enum FeatureFlag: String, CaseIterable {
         case .receiptOCR:       return "Scan receipts and split line items automatically."
         case .aiReceiptCleanup: return "Turn cryptic receipt text into clean item names."
         case .aiAssistant:      return "Ask the assistant about your spending in plain language."
-        case .csvImportExport:  return "Import from Splitwise and export your data as CSV."
+        case .csvImportExport:  return "Import expenses from a CSV and export your data."
         case .cloudShare3Plus:  return "Share your household with 3 or more people."
         }
     }

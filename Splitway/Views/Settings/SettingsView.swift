@@ -65,7 +65,7 @@ struct SettingsView: View {
                     NavigationLink("Recurring bills") {
                         RecurringListView()
                     }
-                    NavigationLink("Import from Splitwise") {
+                    NavigationLink("Import CSV") {
                         ProGate(feature: .csvImportExport) { SplitwiseImportView() }
                     }
                     NavigationLink("Export to CSV") {

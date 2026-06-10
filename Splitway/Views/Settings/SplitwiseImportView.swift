@@ -37,7 +37,7 @@ struct SplitwiseImportView: View {
             .padding(.vertical, 16)
         }
         .background(Color.bg.ignoresSafeArea())
-        .navigationTitle("Import from Splitwise")
+        .navigationTitle("Import CSV")
         .navigationBarTitleDisplayMode(.inline)
         .fileImporter(
             isPresented: $showFileImporter,
@@ -54,7 +54,7 @@ struct SplitwiseImportView: View {
     private var introCard: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Bring your history over").font(.cardTitle).foregroundStyle(Color.text1)
-            Text("Splitway can read the CSV that Splitwise lets you export from your account. Each row becomes a Splitway expense with the same date, description, amount, and an equal split among the people on that row.")
+            Text("Splitway can read a CSV export of your expense history. Each row becomes a Splitway expense with the same date, description, amount, and an equal split among the people on that row.")
                 .font(.cardLabel)
                 .foregroundStyle(Color.text2)
             Text("Two things to know:")
@@ -62,7 +62,7 @@ struct SplitwiseImportView: View {
                 .foregroundStyle(Color.text1)
                 .padding(.top, 6)
             VStack(alignment: .leading, spacing: 4) {
-                bullet("Non-equal splits in Splitwise get imported as equal splits. You can edit any expense afterward.")
+                bullet("Non-equal splits get imported as equal splits. You can edit any expense afterward.")
                 bullet("Member names in the CSV need to match members in your Splitway household. We'll show you what matched and what didn't.")
             }
         }
