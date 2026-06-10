@@ -239,6 +239,10 @@ final class ServiceContainer: ObservableObject {
             AppLog.data.error("Reset app data failed: \(error.localizedDescription, privacy: .public)")
         }
         receiptCleanupService.resetCache()
+        // Clear the one-time onboarding gates so the full flow (consent +
+        // Pro trial page) replays after a reset.
+        UserDefaults.standard.removeObject(forKey: "onboarding.assistantConsentSeen")
+        UserDefaults.standard.removeObject(forKey: "onboarding.proTrialSeen")
         await householdService.refresh()
         await membersService.refresh()
         await groupService.refresh()

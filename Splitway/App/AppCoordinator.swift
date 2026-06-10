@@ -7,6 +7,7 @@ struct AppCoordinator: View {
 
     @State private var hasLoaded = false
     @AppStorage("onboarding.assistantConsentSeen") private var consentSeen: Bool = false
+    @AppStorage("onboarding.proTrialSeen") private var proTrialSeen: Bool = false
 
     var body: some View {
         Group {
@@ -18,6 +19,9 @@ struct AppCoordinator: View {
                 OnboardingFlow()
             } else if !consentSeen {
                 AssistantConsentView()
+            } else if !proTrialSeen && !services.subscriptionService.isPro {
+                ProTrialView()
+                    .environmentObject(services.subscriptionService)
             } else {
                 MainTabs()
             }

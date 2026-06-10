@@ -64,11 +64,17 @@ final class SubscriptionService: ObservableObject {
 
     private func order(_ id: String) -> Int {
         switch id {
-        case ProductID.individualYearly:  return 0
-        case ProductID.familyYearly:      return 1
-        case ProductID.householdLifetime: return 2
-        default:                          return 3
+        case ProductID.individualMonthly: return 0
+        case ProductID.individualYearly:  return 1
+        case ProductID.familyYearly:      return 2
+        case ProductID.householdLifetime: return 3
+        default:                          return 4
         }
+    }
+
+    /// The monthly Individual product, used by the onboarding trial page.
+    var monthlyProduct: Product? {
+        products.first { $0.id == ProductID.individualMonthly }
     }
 
     // MARK: - Entitlements

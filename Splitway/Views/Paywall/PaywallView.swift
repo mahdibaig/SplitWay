@@ -2,8 +2,8 @@ import SwiftUI
 import StoreKit
 
 /// Brand-matched paywall. Presented as a sheet when a free user taps a
-/// Pro-gated feature. Lists the three SKUs, highlights Family + Lifetime as
-/// best value, includes the 14-day trial line and a restore button.
+/// Pro-gated feature. Lists the four SKUs, highlights Family + Lifetime as
+/// best value, includes the 7-day trial line and a restore button.
 struct PaywallView: View {
     /// The feature the user tapped, so the headline can be contextual.
     let feature: FeatureFlag?
@@ -80,7 +80,8 @@ struct PaywallView: View {
 
     @ViewBuilder
     private func productCard(_ product: Product) -> some View {
-        let highlighted = product.id != ProductID.individualYearly
+        let highlighted = product.id == ProductID.familyYearly
+            || product.id == ProductID.householdLifetime
         Button {
             Task { await subscriptions.purchase(product) }
         } label: {
@@ -105,15 +106,9 @@ struct PaywallView: View {
                     Text(product.displayPrice)
                         .font(.cardTitle)
                         .foregroundStyle(Color.text1)
-                    if product.id != ProductID.householdLifetime {
-                        Text("per year")
-                            .font(.caption2)
-                            .foregroundStyle(Color.text2)
-                    } else {
-                        Text("once")
-                            .font(.caption2)
-                            .foregroundStyle(Color.text2)
-                    }
+                    Text(periodLabel(for: product.id))
+                        .font(.caption2)
+                        .foregroundStyle(Color.text2)
                 }
             }
             .padding(Spacing.cardPad)
@@ -129,6 +124,14 @@ struct PaywallView: View {
         }
         .buttonStyle(.plain)
         .disabled(subscriptions.isWorking)
+    }
+
+    private func periodLabel(for productID: String) -> String {
+        switch productID {
+        case ProductID.individualMonthly: return "per month"
+        case ProductID.householdLifetime: return "once"
+        default:                          return "per year"
+        }
     }
 
     private func tag(_ text: String) -> some View {
@@ -159,7 +162,7 @@ struct PaywallView: View {
     }
 
     private var legalLine: some View {
-        Text("14-day free trial on the subscriptions. Cancel anytime in your Apple ID settings. Subscriptions renew automatically until cancelled.")
+        Text("7-day free trial on the subscriptions. Cancel anytime in your Apple ID settings. Subscriptions renew automatically until cancelled.")
             .font(.caption2)
             .foregroundStyle(Color.text3)
             .multilineTextAlignment(.center)

@@ -22,14 +22,16 @@ enum SubscriptionTier: String, Sendable, Equatable {
 /// StoreKit product identifiers. Must match App Store Connect (and the
 /// bundled Splitway.storekit config used for local testing).
 enum ProductID {
+    static let individualMonthly = "splitway_individual_monthly"
     static let individualYearly  = "splitway_individual_yearly"
     static let familyYearly      = "splitway_family_yearly"
     static let householdLifetime = "splitway_household_lifetime"
 
-    static let all: [String] = [individualYearly, familyYearly, householdLifetime]
+    static let all: [String] = [individualMonthly, individualYearly, familyYearly, householdLifetime]
 
     static func tier(for id: String) -> SubscriptionTier {
         switch id {
+        case individualMonthly: return .individual
         case individualYearly:  return .individual
         case familyYearly:      return .family
         case householdLifetime: return .lifetime
