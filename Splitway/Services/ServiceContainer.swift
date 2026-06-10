@@ -243,6 +243,12 @@ final class ServiceContainer: ObservableObject {
         // Pro trial page) replays after a reset.
         UserDefaults.standard.removeObject(forKey: "onboarding.assistantConsentSeen")
         UserDefaults.standard.removeObject(forKey: "onboarding.proTrialSeen")
+        #if DEBUG
+        // The dev Pro override makes isPro true, which auto-skips the
+        // onboarding trial page. A full reset should put the app back in
+        // the true first-launch state, so turn it off too.
+        subscriptionService.devUnlockPro = false
+        #endif
         await householdService.refresh()
         await membersService.refresh()
         await groupService.refresh()
