@@ -1,5 +1,6 @@
 import SwiftUI
 import PhotosUI
+import UniformTypeIdentifiers
 
 /// Full-screen flow for scanning a receipt. Three steps:
 ///   1. Pick: PhotosPicker so this works on simulator (custom camera ships later).
@@ -29,6 +30,7 @@ struct ReceiptScanFlow: View {
     @State private var draft: ReceiptDraft?
     @State private var errorMessage: String?
     @State private var showCamera: Bool = false
+    @State private var showFileImporter: Bool = false
 
     var body: some View {
         NavigationStack {
@@ -76,6 +78,13 @@ struct ReceiptScanFlow: View {
                 )
                 .ignoresSafeArea()
             }
+            .fileImporter(
+                isPresented: $showFileImporter,
+                allowedContentTypes: [.pdf, .image],
+                allowsMultipleSelection: false
+            ) { result in
+                handleFileImport(result)
+            }
         }
     }
 
@@ -112,23 +121,48 @@ struct ReceiptScanFlow: View {
                         .foregroundStyle(Color.ctaText)
                 }
 
-                PhotosPicker(selection: $photoItem, matching: .images) {
-                    Label("Choose from library", systemImage: "photo.on.rectangle")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(Color.surface, in: .rect(cornerRadius: Radius.pill))
-                        .foregroundStyle(Color.text1)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: Radius.pill)
-                                .stroke(Color.borderSubtle, lineWidth: 1)
-                        )
+                HStack(spacing: 12) {
+                    PhotosPicker(selection: $photoItem, matching: .images) {
+                        Label("Photo library", systemImage: "photo.on.rectangle")
+                            .font(.cardLabel.weight(.medium))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(Color.surface, in: .rect(cornerRadius: Radius.pill))
+                            .foregroundStyle(Color.text1)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: Radius.pill)
+                                    .stroke(Color.borderSubtle, lineWidth: 1)
+                            )
+                    }
+
+                    Button {
+                        showFileImporter = true
+                    } label: {
+                        Label("Files (PDF, image)", systemImage: "doc")
+                            .font(.cardLabel.weight(.medium))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(Color.surface, in: .rect(cornerRadius: Radius.pill))
+                            .foregroundStyle(Color.text1)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: Radius.pill)
+                                    .stroke(Color.borderSubtle, lineWidth: 1)
+                            )
+                    }
                 }
 
-                Text("Tip: lay the receipt flat on a dark surface and let the scanner auto-capture. It will crop and flatten automatically.")
+                Text("Tip: for paper receipts, the camera auto-crops and flattens. For Sam's Club, Costco, Apple, or any digital PDF you've saved, use Files.")
                     .font(.caption)
                     .foregroundStyle(Color.text3)
                     .multilineTextAlignment(.center)
+
+                if let errorMessage {
+                    Text(errorMessage)
+                        .font(.caption)
+                        .foregroundStyle(Color.warn)
+                        .multilineTextAlignment(.center)
+                        .padding(.top, 4)
+                }
             }
             .padding(.horizontal, Spacing.screenH)
             .padding(.bottom, 24)
@@ -149,15 +183,36 @@ struct ReceiptScanFlow: View {
         }
     }
 
-    /// Shared post-image-source handler. Called from both the photo
-    /// library path and the live camera (VNDocumentCameraViewController)
-    /// path so the rest of the flow doesn't care where the image came from.
+    /// Shared post-image-source handler. Called from the photo library,
+    /// the live camera (VNDocumentCameraViewController), AND the Files
+    /// import path so the rest of the flow doesn't care where the image
+    /// came from. Everything funnels through the same cloud OCR endpoint.
     private func processCapturedImage(_ image: UIImage) async {
         step = .processing
         pickedImage = image
         let result = await receiptScanService.scan(image: image)
         draft = result
         step = .review
+    }
+
+    /// Handles the result of the `.fileImporter` modifier. Renders a PDF
+    /// page or loads an image, then funnels into the shared processing
+    /// path. Errors surface inline on the pick step.
+    private func handleFileImport(_ result: Result<[URL], Error>) {
+        switch result {
+        case .success(let urls):
+            guard let url = urls.first else { return }
+            do {
+                let image = try DocumentImportService.loadImage(from: url)
+                Task { await processCapturedImage(image) }
+            } catch {
+                errorMessage = error.localizedDescription
+                step = .pick
+            }
+        case .failure(let error):
+            errorMessage = error.localizedDescription
+            step = .pick
+        }
     }
 
     private func loadPickedPhoto(_ item: PhotosPickerItem?) async {
