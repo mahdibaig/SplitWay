@@ -78,3 +78,25 @@ targets:
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: ""
+
+# Wire the local StoreKit config into the Run scheme so Product.products(...)
+# returns the in-app purchases during development on simulator AND device.
+# Without this, no products load, the paywall is empty, and the onboarding
+# "Start my free week" button stays disabled. On TestFlight/App Store this
+# config is ignored and real App Store Connect products are used instead.
+schemes:
+  Splitway:
+    build:
+      targets:
+        Splitway: all
+    run:
+      config: Debug
+      storeKitConfiguration: Splitway/Splitway.storekit
+    test:
+      config: Debug
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
