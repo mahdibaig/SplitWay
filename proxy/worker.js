@@ -23,6 +23,20 @@ const DEEPSEEK_URL = 'https://api.deepseek.com/chat/completions';
 const OPENAI_URL   = 'https://api.openai.com/v1/chat/completions';
 const VISION_MODEL = 'gpt-4o-mini';
 
+// Abuse caps. The shared secret ships in the IPA and is extractable, so the
+// only thing standing between a leaked secret and a runaway provider bill is
+// (a) the per-IP daily rate limit and (b) these hard ceilings on what a
+// single request can cost. Keep them generous enough for real use but tight
+// enough that one abusive request can't be expensive.
+const MAX_BODY_BYTES   = 12 * 1024 * 1024; // 12 MB hard request cap
+const MAX_IMAGE_B64    = 12 * 1024 * 1024; // ~9 MB raw image after base64
+const MAX_CHAT_CHARS   = 200 * 1000;       // total chars across chat messages
+const MAX_CHAT_TOKENS  = 2048;             // clamp client-supplied max_tokens
+// DeepSeek models we allow the chat endpoint to request. Anything else is
+// coerced to deepseek-chat so a leaked secret can't invoke a pricier model.
+const ALLOWED_CHAT_MODELS = ['deepseek-chat', 'deepseek-reasoner'];
+const ALLOWED_IMAGE_MIME = ['image/jpeg', 'image/png', 'image/heic', 'image/webp'];
+
 export default {
   async fetch(request, env, ctx) {
     if (request.method === 'OPTIONS') {
@@ -30,6 +44,12 @@ export default {
     }
     if (request.method !== 'POST') {
       return cors(json({ error: 'method_not_allowed' }, 405));
+    }
+
+    // Reject oversized requests before reading the body (cost/DoS guard).
+    const declaredLen = parseInt(request.headers.get('Content-Length') ?? '0', 10);
+    if (declaredLen > MAX_BODY_BYTES) {
+      return cors(json({ error: 'payload_too_large', limit: MAX_BODY_BYTES }, 413));
     }
 
     // Auth: shared secret. Constant-time compare to avoid timing leaks.
@@ -60,7 +80,39 @@ async function handleChat(request, env, ctx) {
   const rl = await checkRateLimit(env, ctx, request, 'rl', env.DAILY_LIMIT ?? '200');
   if (rl) return cors(rl);
 
-  const body = await request.text();
+  // Parse + sanitize rather than blindly forwarding. A holder of the shared
+  // secret shouldn't be able to request an expensive model, an unbounded
+  // completion, or a giant prompt on our DeepSeek account.
+  let parsed;
+  try {
+    parsed = await request.json();
+  } catch (e) {
+    return cors(json({ error: 'bad_request', detail: 'body must be JSON' }, 400));
+  }
+  if (!parsed || !Array.isArray(parsed.messages) || parsed.messages.length === 0) {
+    return cors(json({ error: 'bad_request', detail: 'messages[] required' }, 400));
+  }
+
+  // Total prompt size guard.
+  let totalChars = 0;
+  for (const m of parsed.messages) {
+    if (typeof m?.content === 'string') totalChars += m.content.length;
+  }
+  if (totalChars > MAX_CHAT_CHARS) {
+    return cors(json({ error: 'prompt_too_large', limit: MAX_CHAT_CHARS }, 413));
+  }
+
+  // Force a known-cheap model + clamp completion length.
+  const safeBody = {
+    model: ALLOWED_CHAT_MODELS.includes(parsed.model) ? parsed.model : 'deepseek-chat',
+    messages: parsed.messages,
+    temperature: typeof parsed.temperature === 'number' ? parsed.temperature : 0.3,
+    max_tokens: Math.min(
+      typeof parsed.max_tokens === 'number' ? parsed.max_tokens : MAX_CHAT_TOKENS,
+      MAX_CHAT_TOKENS
+    ),
+  };
+
   let upstream;
   try {
     upstream = await fetch(DEEPSEEK_URL, {
@@ -69,10 +121,10 @@ async function handleChat(request, env, ctx) {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${env.DEEPSEEK_API_KEY}`,
       },
-      body,
+      body: JSON.stringify(safeBody),
     });
   } catch (e) {
-    return cors(json({ error: 'upstream_unreachable', detail: String(e) }, 502));
+    return cors(json({ error: 'upstream_unreachable' }, 502));
   }
 
   const respBody = await upstream.text();
@@ -156,6 +208,12 @@ async function handleVisionReceipt(request, env, ctx) {
   if (typeof imageBase64 !== 'string' || imageBase64.length < 100) {
     return cors(json({ error: 'bad_request', detail: 'image_base64 missing or too small' }, 400));
   }
+  if (imageBase64.length > MAX_IMAGE_B64) {
+    return cors(json({ error: 'payload_too_large', limit: MAX_IMAGE_B64 }, 413));
+  }
+  if (!ALLOWED_IMAGE_MIME.includes(mimeType)) {
+    return cors(json({ error: 'bad_request', detail: 'unsupported mime_type' }, 400));
+  }
 
   const openaiBody = {
     model: VISION_MODEL,
@@ -191,16 +249,13 @@ async function handleVisionReceipt(request, env, ctx) {
       body: JSON.stringify(openaiBody),
     });
   } catch (e) {
-    return cors(json({ error: 'upstream_unreachable', detail: String(e) }, 502));
+    return cors(json({ error: 'upstream_unreachable' }, 502));
   }
 
   if (!upstream.ok) {
-    const errText = await upstream.text();
-    return cors(json({
-      error: 'upstream_error',
-      status: upstream.status,
-      detail: errText.slice(0, 500)
-    }, 502));
+    // Don't echo the upstream error body to the client (it can contain
+    // provider org/account metadata). Log-free: just surface the status.
+    return cors(json({ error: 'upstream_error', status: upstream.status }, 502));
   }
 
   // Pull the assistant's JSON string out of the OpenAI envelope and pass

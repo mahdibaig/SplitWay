@@ -58,7 +58,9 @@ wrangler secret put APP_SHARED_SECRET
 wrangler secret put OPENAI_API_KEY
 #    paste your OpenAI key (starts with "sk-..." from platform.openai.com).
 
-# 4. (Recommended) per-IP rate limit. Create a KV namespace:
+# 4. STRONGLY RECOMMENDED: per-IP rate limit. This is your main defense
+#    against a leaked shared secret running up the provider bill. Without
+#    it there is NO daily cap. Create a KV namespace:
 wrangler kv namespace create RATE_LIMIT_KV
 #    Copy the printed `id`. Edit wrangler.toml: uncomment the
 #    [[kv_namespaces]] block and paste the id.
@@ -66,6 +68,15 @@ wrangler kv namespace create RATE_LIMIT_KV
 # 5. Deploy
 wrangler deploy
 ```
+
+### Built-in abuse protections
+
+Even without KV, the worker enforces hard per-request ceilings so one
+request can't be expensive: 12 MB max body, 12 MB max image, 200k-char
+max chat prompt, completions clamped to 2048 tokens, and the chat model
+is coerced to an allowlist (deepseek-chat / deepseek-reasoner) so a
+leaked secret can't invoke a pricier model. The per-IP daily limit (KV)
+adds the volume cap on top — set it up.
 
 Wrangler prints the deployed URL, something like:
 `https://splitway-assistant.<your-account>.workers.dev`
