@@ -2,8 +2,9 @@ import SwiftUI
 import StoreKit
 
 /// Brand-matched paywall. Presented as a sheet when a free user taps a
-/// Pro-gated feature. Lists the four SKUs, highlights Family + Lifetime as
-/// best value, includes the 7-day trial line and a restore button.
+/// Pro-gated feature. Lists the subscription SKUs (monthly, individual
+/// yearly, family yearly), highlights Family as most popular, includes the
+/// 7-day trial line and a restore button.
 struct PaywallView: View {
     /// The feature the user tapped, so the headline can be contextual.
     let feature: FeatureFlag?
@@ -81,7 +82,6 @@ struct PaywallView: View {
     @ViewBuilder
     private func productCard(_ product: Product) -> some View {
         let highlighted = product.id == ProductID.familyYearly
-            || product.id == ProductID.householdLifetime
         Button {
             Task { await subscriptions.purchase(product) }
         } label: {
@@ -91,9 +91,7 @@ struct PaywallView: View {
                         Text(product.displayName)
                             .font(.cardTitle)
                             .foregroundStyle(Color.text1)
-                        if product.id == ProductID.householdLifetime {
-                            tag("Best value")
-                        } else if product.id == ProductID.familyYearly {
+                        if product.id == ProductID.familyYearly {
                             tag("Most popular")
                         }
                     }
@@ -129,7 +127,6 @@ struct PaywallView: View {
     private func periodLabel(for productID: String) -> String {
         switch productID {
         case ProductID.individualMonthly: return "per month"
-        case ProductID.householdLifetime: return "once"
         default:                          return "per year"
         }
     }

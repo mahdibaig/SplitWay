@@ -36,7 +36,7 @@ struct ProTrialView: View {
                     Button {
                         showAllPlans = true
                     } label: {
-                        Text("See yearly and lifetime plans")
+                        Text("See yearly plans")
                             .font(.cardLabel)
                             .foregroundStyle(Color.brand2)
                     }

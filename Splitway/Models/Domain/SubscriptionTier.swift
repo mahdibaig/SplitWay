@@ -25,9 +25,12 @@ enum ProductID {
     static let individualMonthly = "splitway_individual_monthly"
     static let individualYearly  = "splitway_individual_yearly"
     static let familyYearly      = "splitway_family_yearly"
+    // Lifetime is deferred ("maybe down the line"). Constant + tier mapping
+    // kept so an old entitlement still resolves and it's a one-line re-add,
+    // but it is intentionally NOT in `all`, so it's never offered for sale.
     static let householdLifetime = "splitway_household_lifetime"
 
-    static let all: [String] = [individualMonthly, individualYearly, familyYearly, householdLifetime]
+    static let all: [String] = [individualMonthly, individualYearly, familyYearly]
 
     static func tier(for id: String) -> SubscriptionTier {
         switch id {

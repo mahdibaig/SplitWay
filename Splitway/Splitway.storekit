@@ -1,23 +1,7 @@
 {
   "identifier" : "08432C0C-6335-446F-9157-4CAEBA02C450",
   "nonRenewingSubscriptions" : [],
-  "products" : [
-    {
-      "displayPrice" : "89.00",
-      "familyShareable" : true,
-      "internalID" : "BCA659B8-E397-4072-9857-97B3B0548124",
-      "localizations" : [
-        {
-          "description" : "Pay once. Splitway Pro forever for your whole household.",
-          "displayName" : "Household Lifetime",
-          "locale" : "en_US"
-        }
-      ],
-      "productID" : "splitway_household_lifetime",
-      "referenceName" : "Household Lifetime",
-      "type" : "NonConsumable"
-    }
-  ],
+  "products" : [],
   "settings" : {
     "_failTransactionsEnabled" : false,
     "_storeKitErrors" : []
