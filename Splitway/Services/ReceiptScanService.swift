@@ -32,13 +32,14 @@ final class ReceiptScanService: ObservableObject {
     /// Costco parser + LLM cleanup pipeline so the user still gets a
     /// usable draft. Either way the cloud's draft includes a `scanError`
     /// the UI can surface if the fallback path was taken.
-    func scan(image: UIImage) async -> ReceiptDraft {
+    func scan(image: UIImage, useProModel: Bool = true) async -> ReceiptDraft {
         await sharedItemRuleService.refresh()
         let processedImage = ReceiptImage.processed(from: image) ?? Data()
 
-        // Primary: cloud vision.
+        // Primary: cloud vision. Pro users get the accurate model; free users
+        // get the cheaper one (their few free scans cost us almost nothing).
         do {
-            let cloud = try await CloudReceiptScanner().scan(image: image)
+            let cloud = try await CloudReceiptScanner().scan(image: image, useProModel: useProModel)
             return await buildDraft(from: cloud, imageData: processedImage)
         } catch {
             AppLog.lifecycle.error("Cloud receipt scan failed; falling back to local Vision: \(error.localizedDescription, privacy: .public)")

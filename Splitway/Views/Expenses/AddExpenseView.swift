@@ -48,6 +48,7 @@ private final class AddExpenseVMHolder: ObservableObject {
 private struct AddExpenseForm: View {
     @ObservedObject var viewModel: AddExpenseViewModel
     @EnvironmentObject private var subscriptions: SubscriptionService
+    @EnvironmentObject private var freeScanQuota: FreeScanQuota
     @Environment(\.dismiss) private var dismiss
     @State private var showCategoryPicker = false
     @State private var showReceiptScan = false
@@ -84,7 +85,9 @@ private struct AddExpenseForm: View {
             }
             ToolbarItem(placement: .principal) {
                 Button {
-                    if subscriptions.canUse(.receiptOCR) {
+                    // Pro = unlimited (accurate model). Free = a few scans
+                    // per month on the cheaper model, then the paywall.
+                    if subscriptions.isPro || freeScanQuota.hasRemaining {
                         showReceiptScan = true
                     } else {
                         showPaywall = true

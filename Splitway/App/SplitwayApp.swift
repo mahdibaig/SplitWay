@@ -29,6 +29,7 @@ struct SplitwayApp: App {
                 .environmentObject(services.subscriptionService)
                 .environmentObject(services.receiptRetentionService)
                 .environmentObject(services.cloudKitSharingService)
+                .environmentObject(services.freeScanQuota)
                 .onChange(of: shareInbox.token) { _, token in
                     guard token != nil, let metadata = shareInbox.metadata else { return }
                     Task {

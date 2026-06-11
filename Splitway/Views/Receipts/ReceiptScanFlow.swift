@@ -15,6 +15,8 @@ struct ReceiptScanFlow: View {
     @EnvironmentObject private var receiptScanService: ReceiptScanService
     @EnvironmentObject private var membersService: MembersService
     @EnvironmentObject private var expenseService: ExpenseService
+    @EnvironmentObject private var subscriptions: SubscriptionService
+    @EnvironmentObject private var freeScanQuota: FreeScanQuota
     @Environment(\.dismiss) private var dismiss
 
     enum Step {
@@ -151,6 +153,13 @@ struct ReceiptScanFlow: View {
                     }
                 }
 
+                if !subscriptions.isPro {
+                    Text("\(freeScanQuota.remaining) free scan\(freeScanQuota.remaining == 1 ? "" : "s") left this month. Go Pro for unlimited scans on our most accurate scanner.")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(Color.brand2)
+                        .multilineTextAlignment(.center)
+                }
+
                 Text("Tip: for paper receipts, the camera auto-crops and flattens. For Sam's Club, Costco, Apple, or any digital PDF you've saved, use Files.")
                     .font(.caption)
                     .foregroundStyle(Color.text3)
@@ -190,7 +199,14 @@ struct ReceiptScanFlow: View {
     private func processCapturedImage(_ image: UIImage) async {
         step = .processing
         pickedImage = image
-        let result = await receiptScanService.scan(image: image)
+        // Pro users get the accurate model; free users get the cheaper one.
+        let isPro = subscriptions.isPro
+        let result = await receiptScanService.scan(image: image, useProModel: isPro)
+        // Count a free scan only when a free user actually got a cloud result
+        // (no fallback). A degraded local-OCR fallback doesn't burn the quota.
+        if !isPro && result.fallbackNotice == nil {
+            freeScanQuota.consume()
+        }
         draft = result
         step = .review
     }

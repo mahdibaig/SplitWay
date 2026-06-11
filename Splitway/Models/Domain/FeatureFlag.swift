@@ -20,7 +20,7 @@ enum FeatureFlag: String, CaseIterable {
         case .unlimitedGroups:  return "Create unlimited groups for every couple and family in your household."
         case .fullReports:      return "See 3, 6, 9, and 12-month trends and your personal spending breakdown."
         case .budgets:          return "Set category budgets and get alerts before you overspend."
-        case .receiptOCR:       return "Scan receipts and split line items automatically."
+        case .receiptOCR:       return "You've used your 3 free scans this month. Go Pro for unlimited scans on our most accurate scanner."
         case .aiReceiptCleanup: return "Turn cryptic receipt text into clean item names."
         case .aiAssistant:      return "Ask the assistant about your spending in plain language."
         case .csvImportExport:  return "Import expenses from a CSV and export your data."

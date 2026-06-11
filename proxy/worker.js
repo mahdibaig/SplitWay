@@ -21,11 +21,13 @@
 
 const DEEPSEEK_URL = 'https://api.deepseek.com/chat/completions';
 const OPENAI_URL   = 'https://api.openai.com/v1/chat/completions';
-// gpt-4o (not -mini) for receipt vision: meaningfully better at reading
-// long, dense, and crinkled receipts where -mini drops line items. Costs
-// roughly ~$0.008/scan vs ~$0.001, still pennies; the per-IP daily cap and
-// OpenAI spend limit bound the total.
-const VISION_MODEL = 'gpt-4o';
+// Receipt vision model by tier. Pro gets gpt-4o (better on long/dense/
+// crinkled receipts, ~$0.008/scan). Free users' few monthly scans get
+// gpt-4o-mini (~$0.001/scan) — good on clean receipts, and keeps the free
+// tier nearly free even at scale. Anything not 'pro' falls to the cheap
+// model, so a spoofed value can't request the pricier one.
+const VISION_MODEL_PRO  = 'gpt-4o';
+const VISION_MODEL_FREE = 'gpt-4o-mini';
 
 // Abuse caps. The shared secret ships in the IPA and is extractable, so the
 // only thing standing between a leaked secret and a runaway provider bill is
@@ -238,8 +240,12 @@ async function handleVisionReceipt(request, env, ctx) {
     return cors(json({ error: 'bad_request', detail: 'unsupported mime_type' }, 400));
   }
 
+  // Model by tier: only an explicit 'pro' gets gpt-4o; everything else
+  // (free, missing, or a spoofed value) gets the cheap model.
+  const model = payload?.tier === 'pro' ? VISION_MODEL_PRO : VISION_MODEL_FREE;
+
   const openaiBody = {
-    model: VISION_MODEL,
+    model,
     response_format: { type: 'json_object' },
     // Headroom for long receipts (~80 items) so output never truncates.
     max_tokens: 4000,

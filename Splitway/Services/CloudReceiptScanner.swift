@@ -55,11 +55,14 @@ struct CloudReceiptScanner: Sendable {
         }
     }
 
-    func scan(image: UIImage) async throws -> Result {
+    func scan(image: UIImage, useProModel: Bool = true) async throws -> Result {
         guard let baseURL = proxy.baseURL, let secret = proxy.sharedSecret else {
             throw ScanError.proxyNotConfigured
         }
         let endpoint = baseURL.appendingPathComponent("/v1/vision/receipt")
+        // Pro = the accurate model; free = the cheaper one. The worker
+        // allowlists both, so a spoofed value can't request a pricier model.
+        let modelTier = useProModel ? "pro" : "free"
 
         // Compress to ~1MP JPEG to keep the upload tight (faster, cheaper).
         // GPT-4o mini handles small receipt photos fine; 1MP keeps OCR
@@ -72,10 +75,12 @@ struct CloudReceiptScanner: Sendable {
         struct Body: Encodable {
             let image_base64: String
             let mime_type: String
+            let tier: String
         }
         let payload = try JSONEncoder().encode(Body(
             image_base64: base64,
-            mime_type: "image/jpeg"
+            mime_type: "image/jpeg",
+            tier: modelTier
         ))
 
         var request = URLRequest(url: endpoint)

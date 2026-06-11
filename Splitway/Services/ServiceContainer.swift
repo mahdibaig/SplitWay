@@ -40,6 +40,7 @@ final class ServiceContainer: ObservableObject {
     let expenseExportService: ExpenseExportService
     let subscriptionService: SubscriptionService
     let cloudKitSharingService: CloudKitSharingService
+    let freeScanQuota: FreeScanQuota
 
     init(persistence: PersistenceController, accounts: CloudKitAccountService) {
         self.persistence = persistence
@@ -153,6 +154,8 @@ final class ServiceContainer: ObservableObject {
             persistence: persistence,
             householdService: householdService
         )
+
+        self.freeScanQuota = FreeScanQuota()
 
         self.assistantService = AssistantService(
             chatRepository: chatRepo,
