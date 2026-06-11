@@ -87,12 +87,22 @@ final class ReceiptScanService: ObservableObject {
             ))
         }
         let subtotal = reviewItems.reduce(Decimal.zero) { $0 + $1.lineItem.amount }
-        let total = cloud.total ?? subtotal
-        // Whatever the scanned total exceeds the line-item subtotal by is tax,
-        // fees, and (as a negative) instant savings — the part that's real
-        // money paid but isn't itemized. Captured so the saved expense matches
-        // what was actually charged.
-        let taxAndFees = total - subtotal
+        // Prefer the tax/savings the model read straight off the receipt.
+        // Fall back to inferring the net adjustment from the total if the
+        // model didn't return them.
+        let tax: Decimal
+        let savings: Decimal
+        if let scannedTax = cloud.tax {
+            tax = scannedTax
+            savings = cloud.savings ?? 0
+        } else if let total = cloud.total, total > subtotal {
+            tax = total - subtotal
+            savings = 0
+        } else {
+            tax = 0
+            savings = 0
+        }
+        let total = cloud.total ?? (subtotal - savings + tax)
         return ReceiptDraft(
             imageData: imageData,
             merchant: cloud.merchant,
@@ -102,7 +112,8 @@ final class ReceiptScanService: ObservableObject {
             // a compact summary so the "View raw OCR text" debug panel
             // still shows something useful.
             rawLines: cloud.items.map { "\($0.name)  \($0.amount)" },
-            taxAndFees: taxAndFees
+            tax: tax,
+            savings: savings
         )
     }
 
@@ -138,10 +149,10 @@ final class ReceiptScanService: ObservableObject {
 
         let subtotal = enrichedItems.reduce(Decimal.zero) { $0 + $1.lineItem.amount }
         // Local OCR rarely reads a reliable receipt total, so only treat the
-        // gap as tax/fees when the parser actually found a total larger than
-        // the subtotal. Otherwise leave it 0 for the user to fill in.
+        // gap as tax when the parser actually found a total larger than the
+        // subtotal. Otherwise leave it 0 for the user to fill in.
         let total: Decimal = parsed.total ?? subtotal
-        let taxAndFees = (parsed.total != nil && total > subtotal) ? total - subtotal : 0
+        let tax = (parsed.total != nil && total > subtotal) ? total - subtotal : 0
 
         return ReceiptDraft(
             imageData: imageData,
@@ -150,7 +161,8 @@ final class ReceiptScanService: ObservableObject {
             parsedTotal: total,
             rawLines: lines.map(\.text),
             fallbackNotice: Self.fallbackNotice(for: cloudError),
-            taxAndFees: taxAndFees
+            tax: tax,
+            savings: 0
         )
     }
 
@@ -379,10 +391,10 @@ struct ReceiptDraft: Sendable {
     /// Set when the cloud scanner failed and we fell back to local OCR, so
     /// the review screen can warn the user that accuracy may be lower.
     var fallbackNotice: String? = nil
-    /// Tax + fees minus discounts: the part of the receipt total that isn't
-    /// itemized. Added to the line-item subtotal to reach the real amount
-    /// paid, and split proportionally across people.
-    var taxAndFees: Decimal = 0
+    /// Tax as printed on the receipt (0 if none / unknown).
+    var tax: Decimal = 0
+    /// Discounts / instant savings as a positive number (0 if none).
+    var savings: Decimal = 0
 }
 
 /// Receipt image compression. Bigger than avatars because users need to read

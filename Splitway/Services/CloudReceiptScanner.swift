@@ -42,6 +42,9 @@ struct CloudReceiptScanner: Sendable {
     struct Result: Decodable, Sendable {
         let merchant: String?
         let date: String?              // YYYY-MM-DD
+        let subtotal: Decimal?         // as printed, before tax
+        let savings: Decimal?          // discounts / instant savings, positive
+        let tax: Decimal?              // as printed
         let total: Decimal?
         let items: [Item]
 

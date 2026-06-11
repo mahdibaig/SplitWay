@@ -158,7 +158,10 @@ function visionSystemPrompt() {
 {
   "merchant": string (short store name, e.g. "Costco"),
   "date": "YYYY-MM-DD" or null,
-  "total": number (the final total paid including tax),
+  "subtotal": number (the SUBTOTAL line as printed, before tax; null if not printed),
+  "savings": number (total discounts / instant savings as a POSITIVE number; 0 if none),
+  "tax": number (the total TAX as printed; 0 if none),
+  "total": number (the final TOTAL actually paid),
   "items": [
     { "name": string (1-4 words, plain English), "amount": number, "category": one of ${CATEGORIES.join('|')} }
   ]
@@ -167,6 +170,10 @@ function visionSystemPrompt() {
 Rules:
 - Capture EVERY line item on the receipt. Do not skip items. Do not invent items.
 - Item amounts are the line price (after multiplying quantity if printed that way).
+- Read subtotal, tax, savings, and total EXACTLY as printed on the receipt —
+  do not compute them yourself. If the receipt prints a TAX line, "tax" must
+  match it. Discounts / instant savings / coupons go in "savings" as a
+  positive number. Normally total = subtotal - savings + tax.
 - Use clean readable names: "WHL MLK GAL" -> "Whole milk gallon", "KS PAPER TWLS" -> "Kirkland paper towels".
 - Each item gets ONE category. Pick the most specific match. Do not default everything to "groceries".
 

@@ -14,7 +14,8 @@ struct ReceiptReviewView: View {
     @State private var category: ExpenseCategory = .groceries
     @State private var descriptionText: String = ""
     @State private var date: Date = Date()
-    @State private var taxAndFees: Decimal = 0
+    @State private var tax: Decimal = 0
+    @State private var savings: Decimal = 0
     @State private var assigningItemID: UUID?
     @State private var quantityItemID: UUID?
     @State private var categoryItemID: UUID?
@@ -183,7 +184,10 @@ struct ReceiptReviewView: View {
     private var subtotal: Decimal {
         items.reduce(Decimal.zero) { $0 + $1.lineItem.amount }
     }
-    private var grandTotal: Decimal { subtotal + taxAndFees }
+    /// Real amount paid: subtotal minus discounts plus tax.
+    private var grandTotal: Decimal { subtotal - savings + tax }
+    /// Net adjustment handed to the splitter (rides along proportionally).
+    private var netAdjustment: Decimal { tax - savings }
 
     private var summaryCard: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -192,7 +196,10 @@ struct ReceiptReviewView: View {
             VStack(spacing: 4) {
                 amountRow("Subtotal (\(items.count) item\(items.count == 1 ? "" : "s"))",
                           subtotal, emphasized: false)
-                amountRow("Tax & fees", taxAndFees, emphasized: false)
+                if savings > 0 {
+                    amountRow("Savings", -savings, emphasized: false)
+                }
+                amountRow("Tax", tax, emphasized: false)
                 Divider().background(Color.borderSubtle)
                 amountRow("Total", grandTotal, emphasized: true)
             }
@@ -220,31 +227,39 @@ struct ReceiptReviewView: View {
         }
     }
 
-    /// Editable tax & fees card. Defaults to the scanned (total − subtotal)
-    /// gap; the user can correct it if the scan got it wrong or they edited
-    /// line items.
+    /// Editable tax + savings, defaulted from what the scan read off the
+    /// receipt. Total recomputes live. The net (tax − savings) is split in
+    /// proportion to what each person bought.
     private var taxFeesCard: some View {
-        let binding = Binding(
-            get: { taxAndFees },
-            set: { taxAndFees = $0 }
-        )
-        return VStack(alignment: .leading, spacing: 6) {
-            Text("Tax & fees").font(.cardLabel).foregroundStyle(Color.text2)
-            HStack(spacing: 2) {
-                Text("$").foregroundStyle(Color.text2)
-                TextField("0.00", value: binding,
-                          format: .number.precision(.fractionLength(0...2)))
-                    .keyboardType(.numbersAndPunctuation)
-                    .font(.cardTitle)
-                    .foregroundStyle(Color.text1)
-            }
-            Text("Tax, fees, and discounts not itemized above. Added to the subtotal and split in proportion to what each person bought.")
+        VStack(alignment: .leading, spacing: 12) {
+            editableAmount(label: "Tax",
+                           binding: Binding(get: { tax }, set: { tax = $0 }))
+            editableAmount(label: "Savings / discounts",
+                           binding: Binding(get: { savings }, set: { savings = $0 }))
+            Text("Read from the receipt. Tax and savings are added to the subtotal to reach the total, and split in proportion to what each person bought.")
                 .font(.caption)
                 .foregroundStyle(Color.text3)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Spacing.cardPad)
         .background(Color.surface, in: .rect(cornerRadius: Radius.card))
+    }
+
+    private func editableAmount(label: String, binding: Binding<Decimal>) -> some View {
+        HStack {
+            Text(label).font(.cardLabel).foregroundStyle(Color.text2)
+            Spacer()
+            HStack(spacing: 2) {
+                Text("$").foregroundStyle(Color.text2)
+                TextField("0.00", value: binding,
+                          format: .number.precision(.fractionLength(0...2)))
+                    .keyboardType(.decimalPad)
+                    .multilineTextAlignment(.trailing)
+                    .frame(width: 90)
+                    .font(.cardTitle)
+                    .foregroundStyle(Color.text1)
+            }
+        }
     }
 
     private var descriptionCard: some View {
@@ -693,9 +708,9 @@ struct ReceiptReviewView: View {
         if items.isEmpty {
             items = draft.items
             descriptionText = draft.merchant ?? ""
-            // Seed tax & fees from the scan (real total minus line-item
-            // subtotal). Never negative-by-rounding noise below a cent.
-            taxAndFees = draft.taxAndFees
+            // Seed tax + savings from what the scan read off the receipt.
+            tax = draft.tax
+            savings = draft.savings
             // Pre-select the expense category from the most common line-item
             // category the AI tagged. User can still override on the card.
             let cats = items.compactMap { $0.lineItem.category }
@@ -711,6 +726,6 @@ struct ReceiptReviewView: View {
     private func commit() async {
         isWorking = true
         defer { isWorking = false }
-        await onSave(items, category, descriptionText, date, taxAndFees)
+        await onSave(items, category, descriptionText, date, netAdjustment)
     }
 }
