@@ -17,7 +17,7 @@
           "codeOffers" : [],
           "displayPrice" : "4.99",
           "familyShareable" : false,
-          "groupNumber" : 2,
+          "groupNumber" : 3,
           "internalID" : "7A2C1F44-9B3E-4D27-A6E1-52D9C40B8810",
           "introductoryOffer" : {
             "internalID" : "5E8B0C92-D1A7-4F36-B843-9A6F02C7E155",
@@ -42,7 +42,7 @@
           "codeOffers" : [],
           "displayPrice" : "44.99",
           "familyShareable" : false,
-          "groupNumber" : 2,
+          "groupNumber" : 3,
           "internalID" : "BCA4D6A9-6DE0-4312-B05A-8ED3856BBF3A",
           "introductoryOffer" : {
             "internalID" : "08645646-530D-4168-BF94-140B63E6C476",
@@ -59,6 +59,56 @@
           "productID" : "splitway_individual_yearly",
           "recurringSubscriptionPeriod" : "P1Y",
           "referenceName" : "Individual Yearly",
+          "subscriptionGroupID" : "49D1AF28-FE86-4449-B8E0-56D8D183597A",
+          "type" : "RecurringSubscription"
+        },
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "7.99",
+          "familyShareable" : false,
+          "groupNumber" : 2,
+          "internalID" : "D1A0E2B3-4C56-4789-A0B1-C2D3E4F50611",
+          "introductoryOffer" : {
+            "internalID" : "D1A0E2B3-4C56-4789-A0B1-C2D3E4F50612",
+            "paymentMode" : "free",
+            "subscriptionPeriod" : "P1W"
+          },
+          "localizations" : [
+            {
+              "description" : "Pro for two people. 7-day free trial.",
+              "displayName" : "Duo Monthly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "splitway_duo_monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Duo Monthly",
+          "subscriptionGroupID" : "49D1AF28-FE86-4449-B8E0-56D8D183597A",
+          "type" : "RecurringSubscription"
+        },
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "64.99",
+          "familyShareable" : false,
+          "groupNumber" : 2,
+          "internalID" : "D2B1F3C4-5D67-489A-B1C2-D3E4F5061722",
+          "introductoryOffer" : {
+            "internalID" : "D2B1F3C4-5D67-489A-B1C2-D3E4F5061723",
+            "paymentMode" : "free",
+            "subscriptionPeriod" : "P1W"
+          },
+          "localizations" : [
+            {
+              "description" : "Pro for two people. 7-day free trial.",
+              "displayName" : "Duo Yearly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "splitway_duo_yearly",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Duo Yearly",
           "subscriptionGroupID" : "49D1AF28-FE86-4449-B8E0-56D8D183597A",
           "type" : "RecurringSubscription"
         },

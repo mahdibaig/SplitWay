@@ -54,24 +54,34 @@ out of the public repo while letting the archive sign.
 ## 3. In-app purchases — REQUIRED for the paywall to work on TestFlight [you]
 
 The local `Splitway.storekit` file is IGNORED on TestFlight. The onboarding
-trial page and paywall read products from ASC. Create these three
+trial page and paywall read products from ASC. Create these four
 auto-renewable subscriptions in **ASC → your app → Subscriptions**, all in
 one subscription group named **Splitway Pro**:
 
-| Product ID | Display name | Price | Duration | Intro offer |
-|---|---|---|---|---|
-| `splitway_individual_monthly` | Monthly | $4.99 | 1 month | 7-day free trial |
-| `splitway_individual_yearly` | Individual | $24.99 | 1 year | 7-day free trial |
-| `splitway_family_yearly` | Family | $39.99 | 1 year | 7-day free trial |
+| Product ID | Display name | Price | Duration | Intro offer | Family Sharable |
+|---|---|---|---|---|---|
+| `splitway_individual_monthly` | Individual Monthly | $4.99 | 1 month | 7-day free trial | No |
+| `splitway_individual_yearly` | Individual Yearly | $44.99 | 1 year | 7-day free trial | No |
+| `splitway_household_monthly` | Household Monthly | $12.99 | 1 month | 7-day free trial | Yes |
+| `splitway_household_yearly` | Household Yearly | $109.99 | 1 year | 7-day free trial | Yes |
 
-- Product IDs must match EXACTLY (they're hardcoded in `ProductID.swift`).
+- Product IDs must match EXACTLY (they're in `ProductID` in
+  `Splitway/Models/Domain/SubscriptionTier.swift`).
 - For each: add a **localized display name + description**, a **price**,
   and an **Introductory Offer** = Free, 1 week.
-- Mark `splitway_family_yearly` as **Family Sharable** if you want the
-  family plan to share across Family Sharing (the code already flags it).
+- Mark BOTH **Household** products **Family Sharable**; leave both
+  **Individual** products not sharable. This build relies on Apple Family
+  Sharing to give the whole household Pro, so the flag is load-bearing.
+- Set subscription **levels** so Household ranks above Individual (Household
+  = higher service level) for correct upgrade/downgrade.
 - Add a **subscription group display name** and at least one **review
   screenshot** per product (ASC requires it before review).
-- Lifetime is intentionally NOT shipping in v1 — don't create it.
+
+> **Duo is intentionally NOT in this build.** The code wires up
+> `splitway_duo_monthly` / `splitway_duo_yearly` but holds them out of the
+> paywall until CloudKit-based Pro sharing ships (a "2 people" plan can't be
+> enforced through Apple Family Sharing, which allows up to 6). Do NOT create
+> the Duo products in ASC yet. Lifetime is also intentionally not shipping.
 
 > Until these exist and are in "Ready to Submit" / approved state, the
 > "Start my free week" button on TestFlight will be disabled and prices

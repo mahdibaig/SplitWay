@@ -1,8 +1,9 @@
 import Foundation
 import StoreKit
 
-/// StoreKit 2 wrapper. Surfaces the current `tier` / `isPro`, loads the three
-/// products, handles purchase + restore, and listens for transaction updates.
+/// StoreKit 2 wrapper. Surfaces the current `tier` / `isPro`, loads the
+/// subscription products, handles purchase + restore, and listens for
+/// transaction updates.
 /// Degrades gracefully when no products are configured (dev without a
 /// StoreKit config or App Store Connect): the app simply behaves as free,
 /// except in DEBUG where a dev toggle can force-unlock everything so all
@@ -52,8 +53,9 @@ final class SubscriptionService: ObservableObject {
 
     func loadProducts() async {
         do {
-            let loaded = try await Product.products(for: ProductID.all)
-            // Stable order: individual, family, lifetime.
+            let loaded = try await Product.products(for: ProductID.shipping)
+            // Stable display order (see order(_:)): Individual then Household,
+            // monthly before yearly.
             products = loaded.sorted { lhs, rhs in
                 order(lhs.id) < order(rhs.id)
             }
@@ -66,9 +68,11 @@ final class SubscriptionService: ObservableObject {
         switch id {
         case ProductID.individualMonthly: return 0
         case ProductID.individualYearly:  return 1
-        case ProductID.householdMonthly:  return 2
-        case ProductID.householdYearly:   return 3
-        default:                          return 4
+        case ProductID.duoMonthly:        return 2
+        case ProductID.duoYearly:         return 3
+        case ProductID.householdMonthly:  return 4
+        case ProductID.householdYearly:   return 5
+        default:                          return 6
         }
     }
 
@@ -79,8 +83,8 @@ final class SubscriptionService: ObservableObject {
 
     // MARK: - Entitlements
 
-    /// Recomputes `tier` from the user's current entitlements. Household
-    /// outranks Individual if somehow both are active.
+    /// Recomputes `tier` from the user's current entitlements, keeping the
+    /// highest-ranked one if more than one is somehow active.
     func refreshEntitlements() async {
         var resolved: SubscriptionTier = .free
         for await result in Transaction.currentEntitlements {
@@ -88,8 +92,7 @@ final class SubscriptionService: ObservableObject {
             if transaction.revocationDate != nil { continue }
             if let exp = transaction.expirationDate, exp < Date() { continue }
             let t = ProductID.tier(for: transaction.productID)
-            if t == .household { resolved = .household }
-            else if t != .free && resolved != .household { resolved = t }
+            if t.rank > resolved.rank { resolved = t }
         }
         tier = resolved
     }

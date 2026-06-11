@@ -2,9 +2,9 @@ import SwiftUI
 import StoreKit
 
 /// Brand-matched paywall. Presented as a sheet when a free user taps a
-/// Pro-gated feature. Lists the subscription SKUs (monthly, individual
-/// yearly, family yearly), highlights Family as most popular, includes the
-/// 7-day trial line and a restore button.
+/// Pro-gated feature. Lists the subscription SKUs (Individual, Duo, and
+/// Household, each monthly and yearly), highlights Household yearly as best
+/// value, includes the 7-day trial line and a restore button.
 struct PaywallView: View {
     /// The feature the user tapped, so the headline can be contextual.
     let feature: FeatureFlag?
@@ -129,6 +129,8 @@ struct PaywallView: View {
         switch productID {
         case ProductID.individualMonthly, ProductID.individualYearly:
             return "Individual"
+        case ProductID.duoMonthly, ProductID.duoYearly:
+            return "Duo"
         case ProductID.householdMonthly, ProductID.householdYearly:
             return "Household"
         default:
@@ -140,6 +142,8 @@ struct PaywallView: View {
         switch productID {
         case ProductID.individualMonthly: return "Just you · billed monthly"
         case ProductID.individualYearly:  return "Just you · billed yearly, save 25%"
+        case ProductID.duoMonthly:        return "Up to 2 people · billed monthly"
+        case ProductID.duoYearly:         return "Up to 2 people · billed yearly, save 32%"
         case ProductID.householdMonthly:  return "Up to 6 people · billed monthly"
         case ProductID.householdYearly:   return "Up to 6 people · billed yearly, save 29%"
         default:                          return "7-day free trial"
