@@ -168,13 +168,25 @@ function visionSystemPrompt() {
 }
 
 Rules:
-- Capture EVERY line item on the receipt. Do not skip items. Do not invent items.
-- Item amounts are the line price (after multiplying quantity if printed that way).
-- Read subtotal, tax, savings, and total EXACTLY as printed on the receipt —
-  do not compute them yourself. If the receipt prints a TAX line, "tax" must
-  match it. Discounts / instant savings / coupons go in "savings" as a
-  positive number. Normally total = subtotal - savings + tax.
-- Use clean readable names: "WHL MLK GAL" -> "Whole milk gallon", "KS PAPER TWLS" -> "Kirkland paper towels".
+- Capture every distinct PRODUCT once. Do not invent items.
+- DISCOUNTS ARE NOT ITEMS. A line that is a discount, instant savings,
+  coupon, markdown, member savings, or rollback — often labeled "INST SV",
+  "SAVINGS", "SV", "COUPON", "DISCOUNT", "MFR", or printed with a trailing
+  or leading minus (e.g. "1.00-", "-1.00") — must NOT appear in items[].
+  Add its absolute value to "savings" instead.
+- MULTI-QUANTITY LINES ARE ONE ITEM. When an item name is followed by a
+  quantity line like "2 AT 1 FOR 2.82", "3 @ 1.99", "2 FOR 5.00", or
+  "<qty> AT <unit>", it is a SINGLE product. Emit ONE item using the
+  product name and its EXTENDED (total) price (e.g. 5.64), never the unit
+  price, and never split it into multiple entries. A receipt's printed
+  "ITEMS SOLD" counts units and can exceed the number of distinct products
+  in items[] — that's expected.
+- Read subtotal, tax, savings, and total EXACTLY as printed on the receipt
+  — do not compute them. "tax" must match the printed TAX line; "total"
+  must match the printed TOTAL line; "subtotal" must match the printed
+  SUBTOTAL line. (Stores differ on whether the subtotal is before or after
+  discounts, so trust the printed numbers, not arithmetic.)
+- Use clean readable names: "WHL MLK GAL" -> "Whole milk gallon", "KS PAPER TWLS" -> "Kirkland paper towels", "MM WHOLE GA" -> "Whole milk".
 - Each item gets ONE category. Pick the most specific match. Do not default everything to "groceries".
 
 Category guide:
