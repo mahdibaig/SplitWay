@@ -86,8 +86,13 @@ final class ReceiptScanService: ObservableObject {
                 wasAICleaned: true
             ))
         }
-        let total = cloud.total
-            ?? reviewItems.reduce(Decimal.zero) { $0 + $1.lineItem.amount }
+        let subtotal = reviewItems.reduce(Decimal.zero) { $0 + $1.lineItem.amount }
+        let total = cloud.total ?? subtotal
+        // Whatever the scanned total exceeds the line-item subtotal by is tax,
+        // fees, and (as a negative) instant savings — the part that's real
+        // money paid but isn't itemized. Captured so the saved expense matches
+        // what was actually charged.
+        let taxAndFees = total - subtotal
         return ReceiptDraft(
             imageData: imageData,
             merchant: cloud.merchant,
@@ -96,7 +101,8 @@ final class ReceiptScanService: ObservableObject {
             // Raw OCR lines aren't available from the cloud path. Synthesize
             // a compact summary so the "View raw OCR text" debug panel
             // still shows something useful.
-            rawLines: cloud.items.map { "\($0.name)  \($0.amount)" }
+            rawLines: cloud.items.map { "\($0.name)  \($0.amount)" },
+            taxAndFees: taxAndFees
         )
     }
 
@@ -130,8 +136,12 @@ final class ReceiptScanService: ObservableObject {
             ))
         }
 
-        let total: Decimal = parsed.total
-            ?? parsed.items.reduce(.zero) { $0 + $1.amount }
+        let subtotal = enrichedItems.reduce(Decimal.zero) { $0 + $1.lineItem.amount }
+        // Local OCR rarely reads a reliable receipt total, so only treat the
+        // gap as tax/fees when the parser actually found a total larger than
+        // the subtotal. Otherwise leave it 0 for the user to fill in.
+        let total: Decimal = parsed.total ?? subtotal
+        let taxAndFees = (parsed.total != nil && total > subtotal) ? total - subtotal : 0
 
         return ReceiptDraft(
             imageData: imageData,
@@ -139,7 +149,8 @@ final class ReceiptScanService: ObservableObject {
             items: enrichedItems,
             parsedTotal: total,
             rawLines: lines.map(\.text),
-            fallbackNotice: Self.fallbackNotice(for: cloudError)
+            fallbackNotice: Self.fallbackNotice(for: cloudError),
+            taxAndFees: taxAndFees
         )
     }
 
@@ -184,6 +195,7 @@ final class ReceiptScanService: ObservableObject {
         category: ExpenseCategory,
         description: String,
         date: Date,
+        taxAndFees: Decimal,
         activeMembers: [HouseholdMember]
     ) async throws -> Expense {
         guard
@@ -203,7 +215,11 @@ final class ReceiptScanService: ObservableObject {
             return li
         }
 
-        let total = lineItems.reduce(Decimal.zero) { $0 + $1.amount }
+        let subtotal = lineItems.reduce(Decimal.zero) { $0 + $1.amount }
+        // The real amount charged = itemized subtotal + tax/fees (minus any
+        // discounts folded into tax/fees as a negative). This is what the
+        // expense should record, not the bare subtotal.
+        let total = subtotal + taxAndFees
         guard total > 0 else { throw RepositoryError.notFound }
 
         // Dominant-by-amount category becomes the expense's headline
@@ -222,6 +238,7 @@ final class ReceiptScanService: ObservableObject {
             lineItems: lineItems,
             activeIDs: activeIDs,
             paidBy: me,
+            subtotal: subtotal,
             total: total
         )
 
@@ -279,12 +296,15 @@ final class ReceiptScanService: ObservableObject {
         return expense
     }
 
-    /// Builds the per-Expense split rule from its own line items, mirroring
-    /// the old monolithic logic but limited to this bucket.
+    /// Builds the per-Expense split rule from its line items, then scales each
+    /// person's share so tax/fees (the gap between `subtotal` and `total`) is
+    /// allocated proportionally — everyone pays tax in proportion to what they
+    /// bought, and the shares sum to the real amount paid.
     private static func makeSplitRule(
         lineItems: [LineItem],
         activeIDs: [UserID],
         paidBy: UserID,
+        subtotal: Decimal,
         total: Decimal
     ) -> SplitRule {
         var shareByUser: [UserID: Decimal] = [:]
@@ -310,6 +330,15 @@ final class ReceiptScanService: ObservableObject {
             let perAssignee = item.amount / Decimal(assignees.count)
             for user in assignees {
                 shareByUser[user, default: 0] += perAssignee
+            }
+        }
+
+        // Scale subtotal-based shares up (or down) to the real total so tax,
+        // fees, and discounts ride along proportionally. Guard subtotal > 0.
+        if subtotal > 0, total != subtotal {
+            let factor = total / subtotal
+            for (user, share) in shareByUser {
+                shareByUser[user] = share * factor
             }
         }
 
@@ -350,6 +379,10 @@ struct ReceiptDraft: Sendable {
     /// Set when the cloud scanner failed and we fell back to local OCR, so
     /// the review screen can warn the user that accuracy may be lower.
     var fallbackNotice: String? = nil
+    /// Tax + fees minus discounts: the part of the receipt total that isn't
+    /// itemized. Added to the line-item subtotal to reach the real amount
+    /// paid, and split proportionally across people.
+    var taxAndFees: Decimal = 0
 }
 
 /// Receipt image compression. Bigger than avatars because users need to read

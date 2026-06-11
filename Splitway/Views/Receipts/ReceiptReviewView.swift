@@ -7,13 +7,14 @@ struct ReceiptReviewView: View {
     let draft: ReceiptDraft
     let image: UIImage
     let members: [HouseholdMember]
-    let onSave: ([ReviewItem], ExpenseCategory, String, Date) async -> Void
+    let onSave: ([ReviewItem], ExpenseCategory, String, Date, Decimal) async -> Void
     let onCancel: () -> Void
 
     @State private var items: [ReviewItem] = []
     @State private var category: ExpenseCategory = .groceries
     @State private var descriptionText: String = ""
     @State private var date: Date = Date()
+    @State private var taxAndFees: Decimal = 0
     @State private var assigningItemID: UUID?
     @State private var quantityItemID: UUID?
     @State private var categoryItemID: UUID?
@@ -38,6 +39,7 @@ struct ReceiptReviewView: View {
                 categoryCard
                 dateCard
                 itemsSection
+                taxFeesCard
                 ocrDebugSection
             }
             .padding(.horizontal, Spacing.screenH)
@@ -178,18 +180,67 @@ struct ReceiptReviewView: View {
         }
     }
 
+    private var subtotal: Decimal {
+        items.reduce(Decimal.zero) { $0 + $1.lineItem.amount }
+    }
+    private var grandTotal: Decimal { subtotal + taxAndFees }
+
     private var summaryCard: some View {
-        let total = items.reduce(Decimal.zero) { $0 + $1.lineItem.amount }
-        return VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 8) {
             Text(draft.merchant ?? "Receipt").font(.cardTitle).foregroundStyle(Color.text1)
-            Text("\(items.count) line item\(items.count == 1 ? "" : "s") · \(CurrencyFormat.usd(total)) total")
-                .font(.cardLabel)
-                .foregroundStyle(Color.text2)
+
+            VStack(spacing: 4) {
+                amountRow("Subtotal (\(items.count) item\(items.count == 1 ? "" : "s"))",
+                          subtotal, emphasized: false)
+                amountRow("Tax & fees", taxAndFees, emphasized: false)
+                Divider().background(Color.borderSubtle)
+                amountRow("Total", grandTotal, emphasized: true)
+            }
+
             if items.isEmpty {
                 Text("No line items detected. You can add them by hand with the + button below, or cancel and use manual entry.")
                     .font(.caption)
                     .foregroundStyle(Color.text3)
             }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(Spacing.cardPad)
+        .background(Color.surface, in: .rect(cornerRadius: Radius.card))
+    }
+
+    private func amountRow(_ label: String, _ value: Decimal, emphasized: Bool) -> some View {
+        HStack {
+            Text(label)
+                .font(emphasized ? .cardTitle : .cardLabel)
+                .foregroundStyle(emphasized ? Color.text1 : Color.text2)
+            Spacer()
+            Text(CurrencyFormat.usd(value))
+                .font(emphasized ? .cardTitle : .cardLabel)
+                .foregroundStyle(emphasized ? Color.text1 : Color.text2)
+        }
+    }
+
+    /// Editable tax & fees card. Defaults to the scanned (total − subtotal)
+    /// gap; the user can correct it if the scan got it wrong or they edited
+    /// line items.
+    private var taxFeesCard: some View {
+        let binding = Binding(
+            get: { taxAndFees },
+            set: { taxAndFees = $0 }
+        )
+        return VStack(alignment: .leading, spacing: 6) {
+            Text("Tax & fees").font(.cardLabel).foregroundStyle(Color.text2)
+            HStack(spacing: 2) {
+                Text("$").foregroundStyle(Color.text2)
+                TextField("0.00", value: binding,
+                          format: .number.precision(.fractionLength(0...2)))
+                    .keyboardType(.numbersAndPunctuation)
+                    .font(.cardTitle)
+                    .foregroundStyle(Color.text1)
+            }
+            Text("Tax, fees, and discounts not itemized above. Added to the subtotal and split in proportion to what each person bought.")
+                .font(.caption)
+                .foregroundStyle(Color.text3)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Spacing.cardPad)
@@ -642,6 +693,9 @@ struct ReceiptReviewView: View {
         if items.isEmpty {
             items = draft.items
             descriptionText = draft.merchant ?? ""
+            // Seed tax & fees from the scan (real total minus line-item
+            // subtotal). Never negative-by-rounding noise below a cent.
+            taxAndFees = draft.taxAndFees
             // Pre-select the expense category from the most common line-item
             // category the AI tagged. User can still override on the card.
             let cats = items.compactMap { $0.lineItem.category }
@@ -657,6 +711,6 @@ struct ReceiptReviewView: View {
     private func commit() async {
         isWorking = true
         defer { isWorking = false }
-        await onSave(items, category, descriptionText, date)
+        await onSave(items, category, descriptionText, date, taxAndFees)
     }
 }
