@@ -70,7 +70,7 @@ struct AssistantConsentView: View {
                 body: "Tap a chip like \"How much did I spend on groceries?\" and get a clear answer.")
             row(icon: "paperplane",
                 title: "Sends a household snapshot",
-                body: "Your members, balances, this and last month's totals, budgets, and recent expenses go to DeepSeek to generate the reply.")
+                body: "Your members, balances, this and last month's totals, budgets, and recent expenses are sent securely to generate the reply.")
             row(icon: "lock.shield",
                 title: "Never sends",
                 body: "Apple IDs, your iCloud account, raw receipts, photos, or anything you didn't ask about.")
