@@ -115,7 +115,14 @@ struct CloudReceiptScanner: Sendable {
     // MARK: - Helpers
 
     private func compress(_ image: UIImage) -> Data? {
-        let maxDim: CGFloat = 1400  // long edge in pixels
+        // 2048px long edge: OpenAI's high-detail vision scales images to fit
+        // within 2048x2048 before tiling, so this is the most usable detail
+        // we can hand it. Shrinking further (the old 1400) threw away
+        // resolution the model could have read, which is why long, dense
+        // receipts (Marshalls, etc.) lost line items. Quality 0.85 keeps
+        // small receipt text crisp; the result is still ~1-2 MB, well under
+        // the proxy's 12 MB cap.
+        let maxDim: CGFloat = 2048  // long edge in pixels
         let longest = max(image.size.width, image.size.height)
         let target: CGSize
         if longest <= maxDim {
@@ -129,7 +136,7 @@ struct CloudReceiptScanner: Sendable {
         let resized = renderer.image { _ in
             image.draw(in: CGRect(origin: .zero, size: target))
         }
-        return resized.jpegData(compressionQuality: 0.7)
+        return resized.jpegData(compressionQuality: 0.85)
     }
 
     private static func extractRateLimit(from data: Data) -> Int? {
