@@ -1,11 +1,13 @@
 import Foundation
 
 /// What the user has paid for. `free` is the baseline; everything else is Pro.
+/// v1 ships two paid tiers: Individual (the subscriber) and Household
+/// (Apple-Family-shareable, up to 6). A "Duo" couples tier is planned for a
+/// later release once per-seat tracking exists.
 enum SubscriptionTier: String, Sendable, Equatable {
     case free
     case individual
-    case family
-    case lifetime
+    case household
 
     var isPro: Bool { self != .free }
 
@@ -13,8 +15,7 @@ enum SubscriptionTier: String, Sendable, Equatable {
         switch self {
         case .free:       return "Free"
         case .individual: return "Individual"
-        case .family:     return "Family"
-        case .lifetime:   return "Household Lifetime"
+        case .household:  return "Household"
         }
     }
 }
@@ -24,21 +25,23 @@ enum SubscriptionTier: String, Sendable, Equatable {
 enum ProductID {
     static let individualMonthly = "splitway_individual_monthly"
     static let individualYearly  = "splitway_individual_yearly"
-    static let familyYearly      = "splitway_family_yearly"
-    // Lifetime is deferred ("maybe down the line"). Constant + tier mapping
-    // kept so an old entitlement still resolves and it's a one-line re-add,
-    // but it is intentionally NOT in `all`, so it's never offered for sale.
-    static let householdLifetime = "splitway_household_lifetime"
+    static let householdMonthly  = "splitway_household_monthly"
+    static let householdYearly   = "splitway_household_yearly"
 
-    static let all: [String] = [individualMonthly, individualYearly, familyYearly]
+    static let all: [String] = [
+        individualMonthly, individualYearly,
+        householdMonthly, householdYearly
+    ]
 
     static func tier(for id: String) -> SubscriptionTier {
         switch id {
-        case individualMonthly: return .individual
-        case individualYearly:  return .individual
-        case familyYearly:      return .family
-        case householdLifetime: return .lifetime
-        default:                return .free
+        case individualMonthly, individualYearly: return .individual
+        case householdMonthly, householdYearly:   return .household
+        default:                                  return .free
         }
+    }
+
+    static func isYearly(_ id: String) -> Bool {
+        id == individualYearly || id == householdYearly
     }
 }

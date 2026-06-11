@@ -17,7 +17,7 @@
           "codeOffers" : [],
           "displayPrice" : "4.99",
           "familyShareable" : false,
-          "groupNumber" : 1,
+          "groupNumber" : 2,
           "internalID" : "7A2C1F44-9B3E-4D27-A6E1-52D9C40B8810",
           "introductoryOffer" : {
             "internalID" : "5E8B0C92-D1A7-4F36-B843-9A6F02C7E155",
@@ -27,7 +27,7 @@
           "localizations" : [
             {
               "description" : "Pro for one person. 7-day free trial.",
-              "displayName" : "Monthly",
+              "displayName" : "Individual Monthly",
               "locale" : "en_US"
             }
           ],
@@ -40,9 +40,9 @@
         {
           "adHocOffers" : [],
           "codeOffers" : [],
-          "displayPrice" : "24.99",
+          "displayPrice" : "44.99",
           "familyShareable" : false,
-          "groupNumber" : 1,
+          "groupNumber" : 2,
           "internalID" : "BCA4D6A9-6DE0-4312-B05A-8ED3856BBF3A",
           "introductoryOffer" : {
             "internalID" : "08645646-530D-4168-BF94-140B63E6C476",
@@ -52,7 +52,7 @@
           "localizations" : [
             {
               "description" : "Pro for one person. 7-day free trial.",
-              "displayName" : "Individual",
+              "displayName" : "Individual Yearly",
               "locale" : "en_US"
             }
           ],
@@ -65,7 +65,32 @@
         {
           "adHocOffers" : [],
           "codeOffers" : [],
-          "displayPrice" : "39.99",
+          "displayPrice" : "12.99",
+          "familyShareable" : true,
+          "groupNumber" : 1,
+          "internalID" : "C71D9A20-4E58-4B11-9F3A-1D6E84B2A901",
+          "introductoryOffer" : {
+            "internalID" : "A3F2E1D0-7C49-4A86-B521-0E9F37C6D480",
+            "paymentMode" : "free",
+            "subscriptionPeriod" : "P1W"
+          },
+          "localizations" : [
+            {
+              "description" : "Pro for your whole household, up to 6 people. 7-day free trial.",
+              "displayName" : "Household Monthly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "splitway_household_monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Household Monthly",
+          "subscriptionGroupID" : "49D1AF28-FE86-4449-B8E0-56D8D183597A",
+          "type" : "RecurringSubscription"
+        },
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "109.99",
           "familyShareable" : true,
           "groupNumber" : 1,
           "internalID" : "134368CF-8B07-40BC-8FAD-4F5AE4252300",
@@ -76,14 +101,14 @@
           },
           "localizations" : [
             {
-              "description" : "Pro for up to 5 household members. 7-day free trial.",
-              "displayName" : "Family",
+              "description" : "Pro for your whole household, up to 6 people. 7-day free trial.",
+              "displayName" : "Household Yearly",
               "locale" : "en_US"
             }
           ],
-          "productID" : "splitway_family_yearly",
+          "productID" : "splitway_household_yearly",
           "recurringSubscriptionPeriod" : "P1Y",
-          "referenceName" : "Family Yearly",
+          "referenceName" : "Household Yearly",
           "subscriptionGroupID" : "49D1AF28-FE86-4449-B8E0-56D8D183597A",
           "type" : "RecurringSubscription"
         }

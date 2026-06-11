@@ -81,21 +81,22 @@ struct PaywallView: View {
 
     @ViewBuilder
     private func productCard(_ product: Product) -> some View {
-        let highlighted = product.id == ProductID.familyYearly
+        // Highlight the Household yearly as best value.
+        let highlighted = product.id == ProductID.householdYearly
         Button {
             Task { await subscriptions.purchase(product) }
         } label: {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) {
-                        Text(product.displayName)
+                        Text(planTitle(for: product.id))
                             .font(.cardTitle)
                             .foregroundStyle(Color.text1)
-                        if product.id == ProductID.familyYearly {
-                            tag("Most popular")
+                        if product.id == ProductID.householdYearly {
+                            tag("Best value")
                         }
                     }
-                    Text(product.description)
+                    Text(planSubtitle(for: product.id))
                         .font(.caption)
                         .foregroundStyle(Color.text2)
                 }
@@ -124,11 +125,29 @@ struct PaywallView: View {
         .disabled(subscriptions.isWorking)
     }
 
-    private func periodLabel(for productID: String) -> String {
+    private func planTitle(for productID: String) -> String {
         switch productID {
-        case ProductID.individualMonthly: return "per month"
-        default:                          return "per year"
+        case ProductID.individualMonthly, ProductID.individualYearly:
+            return "Individual"
+        case ProductID.householdMonthly, ProductID.householdYearly:
+            return "Household"
+        default:
+            return "Splitway Pro"
         }
+    }
+
+    private func planSubtitle(for productID: String) -> String {
+        switch productID {
+        case ProductID.individualMonthly: return "Just you · billed monthly"
+        case ProductID.individualYearly:  return "Just you · billed yearly, save 25%"
+        case ProductID.householdMonthly:  return "Up to 6 people · billed monthly"
+        case ProductID.householdYearly:   return "Up to 6 people · billed yearly, save 29%"
+        default:                          return "7-day free trial"
+        }
+    }
+
+    private func periodLabel(for productID: String) -> String {
+        ProductID.isYearly(productID) ? "per year" : "per month"
     }
 
     private func tag(_ text: String) -> some View {

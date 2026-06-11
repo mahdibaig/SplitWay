@@ -66,21 +66,21 @@ final class SubscriptionService: ObservableObject {
         switch id {
         case ProductID.individualMonthly: return 0
         case ProductID.individualYearly:  return 1
-        case ProductID.familyYearly:      return 2
-        case ProductID.householdLifetime: return 3
+        case ProductID.householdMonthly:  return 2
+        case ProductID.householdYearly:   return 3
         default:                          return 4
         }
     }
 
-    /// The monthly Individual product, used by the onboarding trial page.
+    /// The Individual monthly product, used by the onboarding trial page.
     var monthlyProduct: Product? {
         products.first { $0.id == ProductID.individualMonthly }
     }
 
     // MARK: - Entitlements
 
-    /// Recomputes `tier` from the user's current entitlements. Lifetime (a
-    /// non-consumable) outranks the subscriptions if somehow both exist.
+    /// Recomputes `tier` from the user's current entitlements. Household
+    /// outranks Individual if somehow both are active.
     func refreshEntitlements() async {
         var resolved: SubscriptionTier = .free
         for await result in Transaction.currentEntitlements {
@@ -88,8 +88,8 @@ final class SubscriptionService: ObservableObject {
             if transaction.revocationDate != nil { continue }
             if let exp = transaction.expirationDate, exp < Date() { continue }
             let t = ProductID.tier(for: transaction.productID)
-            if t == .lifetime { resolved = .lifetime; break }
-            if t != .free { resolved = t }
+            if t == .household { resolved = .household }
+            else if t != .free && resolved != .household { resolved = t }
         }
         tier = resolved
     }
