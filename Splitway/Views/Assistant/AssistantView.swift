@@ -147,11 +147,7 @@ struct AssistantView: View {
         HStack(alignment: .top, spacing: 8) {
             if isUser { Spacer(minLength: 40) }
             else {
-                Image(systemName: "leaf.fill")
-                    .font(.caption)
-                    .foregroundStyle(Color.brand)
-                    .frame(width: 24, height: 24)
-                    .background(Color.brandSoft, in: .circle)
+                assistantAvatar
             }
             Text(message.content)
                 .font(.body)
@@ -164,13 +160,20 @@ struct AssistantView: View {
         }
     }
 
+    /// Capybara mascot face used as the assistant's reply avatar.
+    private var assistantAvatar: some View {
+        Image("CapybaraFace")
+            .resizable()
+            .scaledToFill()
+            .frame(width: 24, height: 24)
+            .background(Color.brandSoft)
+            .clipShape(.circle)
+            .accessibilityHidden(true)
+    }
+
     private var thinkingBubble: some View {
         HStack(alignment: .top, spacing: 8) {
-            Image(systemName: "leaf.fill")
-                .font(.caption)
-                .foregroundStyle(Color.brand)
-                .frame(width: 24, height: 24)
-                .background(Color.brandSoft, in: .circle)
+            assistantAvatar
             HStack(spacing: 4) {
                 ProgressView().controlSize(.small)
                 Text("Thinking…").font(.cardLabel).foregroundStyle(Color.text2)
