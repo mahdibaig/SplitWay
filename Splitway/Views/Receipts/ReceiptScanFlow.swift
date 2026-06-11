@@ -237,7 +237,7 @@ struct ReceiptScanFlow: View {
         }
     }
 
-    private func handleSave(items: [ReviewItem], category: ExpenseCategory, description: String, date: Date, taxAndFees: Decimal) async {
+    private func handleSave(items: [ReviewItem], category: ExpenseCategory, description: String, date: Date, total: Decimal) async {
         guard let draft else { return }
         do {
             _ = try await receiptScanService.saveExpense(
@@ -246,7 +246,7 @@ struct ReceiptScanFlow: View {
                 category: category,
                 description: description,
                 date: date,
-                taxAndFees: taxAndFees,
+                total: total,
                 activeMembers: membersService.members
             )
             await expenseService.refresh()

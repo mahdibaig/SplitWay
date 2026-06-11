@@ -102,7 +102,10 @@ final class ReceiptScanService: ObservableObject {
             tax = 0
             savings = 0
         }
-        let total = cloud.total ?? (subtotal - savings + tax)
+        // Prefer the printed subtotal/total the model read; fall back to the
+        // line-item sum only if they're missing.
+        let printedSubtotal = cloud.subtotal ?? subtotal
+        let total = cloud.total ?? (printedSubtotal - savings + tax)
         return ReceiptDraft(
             imageData: imageData,
             merchant: cloud.merchant,
@@ -112,6 +115,7 @@ final class ReceiptScanService: ObservableObject {
             // a compact summary so the "View raw OCR text" debug panel
             // still shows something useful.
             rawLines: cloud.items.map { "\($0.name)  \($0.amount)" },
+            subtotal: printedSubtotal,
             tax: tax,
             savings: savings
         )
@@ -161,6 +165,7 @@ final class ReceiptScanService: ObservableObject {
             parsedTotal: total,
             rawLines: lines.map(\.text),
             fallbackNotice: Self.fallbackNotice(for: cloudError),
+            subtotal: subtotal,
             tax: tax,
             savings: 0
         )
@@ -207,7 +212,7 @@ final class ReceiptScanService: ObservableObject {
         category: ExpenseCategory,
         description: String,
         date: Date,
-        taxAndFees: Decimal,
+        total: Decimal,
         activeMembers: [HouseholdMember]
     ) async throws -> Expense {
         guard
@@ -227,11 +232,10 @@ final class ReceiptScanService: ObservableObject {
             return li
         }
 
-        let subtotal = lineItems.reduce(Decimal.zero) { $0 + $1.amount }
-        // The real amount charged = itemized subtotal + tax/fees (minus any
-        // discounts folded into tax/fees as a negative). This is what the
-        // expense should record, not the bare subtotal.
-        let total = subtotal + taxAndFees
+        // `total` is the receipt's authoritative total (what was actually
+        // paid). The line-item sum is only used to apportion that total
+        // across people in proportion to what each bought.
+        let lineItemSum = lineItems.reduce(Decimal.zero) { $0 + $1.amount }
         guard total > 0 else { throw RepositoryError.notFound }
 
         // Dominant-by-amount category becomes the expense's headline
@@ -250,7 +254,7 @@ final class ReceiptScanService: ObservableObject {
             lineItems: lineItems,
             activeIDs: activeIDs,
             paidBy: me,
-            subtotal: subtotal,
+            subtotal: lineItemSum,
             total: total
         )
 
@@ -391,6 +395,8 @@ struct ReceiptDraft: Sendable {
     /// Set when the cloud scanner failed and we fell back to local OCR, so
     /// the review screen can warn the user that accuracy may be lower.
     var fallbackNotice: String? = nil
+    /// Subtotal as printed on the receipt (before tax/savings).
+    var subtotal: Decimal = 0
     /// Tax as printed on the receipt (0 if none / unknown).
     var tax: Decimal = 0
     /// Discounts / instant savings as a positive number (0 if none).
