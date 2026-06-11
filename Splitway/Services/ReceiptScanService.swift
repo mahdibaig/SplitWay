@@ -150,11 +150,17 @@ final class ReceiptScanService: ObservableObject {
                 return "Cloud scan limit reached for today (\(limit)). Showing local OCR results — accuracy may be lower."
             case .visionNotConfigured, .proxyNotConfigured:
                 return "Cloud scanning isn't available; using local OCR. Accuracy may be lower."
-            default:
-                return "Cloud scan failed; using local OCR as a fallback. Accuracy may be lower."
+            case .badStatus(let code, _):
+                // Surface the HTTP status so a config issue is diagnosable:
+                // 401 = shared secret mismatch, 429 = rate limited,
+                // 5xx = worker/provider problem.
+                return "Cloud scan failed (HTTP \(code)); using local OCR. Accuracy may be lower."
+            case .malformedResponse:
+                return "Cloud scan got an unreadable response; using local OCR. Accuracy may be lower."
             }
         }
-        return "Cloud scan failed; using local OCR as a fallback. Accuracy may be lower."
+        // Non-ScanError (network/transport).
+        return "Cloud scan failed (network); using local OCR. Accuracy may be lower."
     }
 
     private static func normalize(_ raw: String) -> String {
