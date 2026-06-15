@@ -86,6 +86,14 @@ struct ExpenseLineItemList: View {
                         .font(.caption)
                         .foregroundStyle(Color.text2)
                         .lineLimit(1)
+                    if item.quantity > 1 {
+                        Text("×\(item.quantity)")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(Color.text2)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 1)
+                            .background(Color.surface, in: .capsule)
+                    }
                     Spacer(minLength: 8)
                     Text(CurrencyFormat.usd(item.amount))
                         .font(.caption.monospacedDigit())

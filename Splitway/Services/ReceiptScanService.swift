@@ -64,7 +64,7 @@ final class ReceiptScanService: ObservableObject {
                 displayName: entry.name,
                 normalizedItemName: normalized,
                 amount: entry.amount,
-                quantity: 1,
+                quantity: max(1, entry.quantity ?? 1),
                 assignedToUserIDs: [],
                 category: category
             )

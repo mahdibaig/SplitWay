@@ -51,6 +51,7 @@ struct CloudReceiptScanner: Sendable {
         struct Item: Decodable, Sendable {
             let name: String
             let amount: Decimal
+            let quantity: Int?         // units bought; nil/absent treated as 1
             let category: String?      // ExpenseCategory rawValue
         }
     }

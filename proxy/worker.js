@@ -146,7 +146,7 @@ async function handleChat(request, env, ctx) {
 
 // Expected input body:  {"image_base64": "<jpeg base64>", "mime_type": "image/jpeg"}
 // Expected output:      {"merchant": ..., "date": "YYYY-MM-DD", "total": <num>,
-//                        "items": [{"name": ..., "amount": <num>, "category": "..."}]}
+//                        "items": [{"name": ..., "amount": <num>, "quantity": <int>, "category": "..."}]}
 
 const CATEGORIES = [
   'rent', 'utilities', 'groceries', 'diningOut', 'transportation',
@@ -169,7 +169,7 @@ function visionSystemPrompt() {
   "tax": number (the total TAX as printed; 0 if none),
   "total": number (the final TOTAL actually paid),
   "items": [
-    { "name": string (1-4 words, plain English), "amount": number, "category": one of ${CATEGORIES.join('|')} }
+    { "name": string (1-4 words, plain English), "amount": number, "quantity": integer (units bought; default 1), "category": one of ${CATEGORIES.join('|')} }
   ]
 }
 
@@ -184,9 +184,13 @@ Rules:
   quantity line like "2 AT 1 FOR 2.82", "3 @ 1.99", "2 FOR 5.00", or
   "<qty> AT <unit>", it is a SINGLE product. Emit ONE item using the
   product name and its EXTENDED (total) price (e.g. 5.64), never the unit
-  price, and never split it into multiple entries. A receipt's printed
-  "ITEMS SOLD" counts units and can exceed the number of distinct products
-  in items[] — that's expected.
+  price, and never split it into multiple entries. Set "quantity" to the
+  number of units (e.g. 2 for "2 AT 1 FOR ...", 3 for "3 @ 1.99").
+- COMBINE REPEATS. If the same product appears on multiple separate lines,
+  emit it once with "amount" = the summed price and "quantity" = the number
+  of lines. For an ordinary single-unit item, "quantity" is 1. A receipt's
+  printed "ITEMS SOLD" counts units and can exceed the number of distinct
+  products in items[] — that's expected.
 - Read subtotal, tax, savings, and total EXACTLY as printed on the receipt
   — do not compute them. "tax" must match the printed TAX line; "total"
   must match the printed TOTAL line; "subtotal" must match the printed

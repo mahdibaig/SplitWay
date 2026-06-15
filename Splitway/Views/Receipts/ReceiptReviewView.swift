@@ -539,6 +539,15 @@ struct ReceiptReviewView: View {
                     .textInputAutocapitalization(.words)
                     .disabled(selectMode)
 
+                if items[idx].lineItem.quantity > 1 {
+                    Text("×\(items[idx].lineItem.quantity)")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Color.text2)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.surface2, in: .capsule)
+                }
+
                 if items[idx].wasAICleaned {
                     aiBadge(idx: idx)
                 }
