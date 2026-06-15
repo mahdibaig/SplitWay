@@ -103,7 +103,7 @@ struct HouseholdSharingView: View {
             }
             .disabled(isPreparing)
         } footer: {
-            Text("Free covers a 2-person household. Inviting a third person is a Pro feature.")
+            Text("Free, Individual, and Duo cover a 2-person household. Household covers up to 6.")
         }
     }
 
@@ -127,10 +127,16 @@ struct HouseholdSharingView: View {
     private func invite() {
         errorMessage = nil
 
-        // Pro gate: free tier tops out at 2 people (you + one). If a share
-        // already has 2+ participants, adding another needs Pro.
-        if !subscriptions.isPro && participantCount >= 2 {
-            showPaywall = true
+        // Seat-cap gate: the household's plan sets how many people can join.
+        // Free, Individual, and Duo top out at 2; Household allows 6. At the cap,
+        // either upsell to a roomier plan or, if already on Household, ask them
+        // to remove a member.
+        if participantCount >= subscriptions.participationCap {
+            if subscriptions.effectivePlanTier == .household {
+                errorMessage = "Your household is at its 6-person limit. Remove a member from the invite sheet to add someone new."
+            } else {
+                showPaywall = true
+            }
             return
         }
 

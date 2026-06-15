@@ -12,6 +12,22 @@ struct Household: Identifiable, Hashable, Sendable {
     var groupsEnabled: Bool
     var createdAt: Date
     var createdByUserID: UserID
+
+    /// The active shared Pro plan, stamped by whichever member subscribed.
+    /// `proTierRaw` is a `SubscriptionTier` raw value; nil means no plan.
+    var proTierRaw: String? = nil
+    var proExpiresAt: Date? = nil
+
+    /// The household's active shared plan, or nil if none is stamped or it has
+    /// lapsed. Members within `tier.proSeatCap` inherit Pro from this.
+    var activeProPlan: (tier: SubscriptionTier, expiresAt: Date?)? {
+        guard let raw = proTierRaw,
+              let tier = SubscriptionTier(rawValue: raw),
+              tier.isPro
+        else { return nil }
+        if let expiresAt = proExpiresAt, expiresAt < Date() { return nil }
+        return (tier, proExpiresAt)
+    }
 }
 
 struct HouseholdMember: Identifiable, Hashable, Sendable {

@@ -46,6 +46,8 @@
         <attribute name="inviteCode" optional="YES" attributeType="String" defaultValueString=""/>
         <attribute name="inviteCodeExpiresAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="name" optional="YES" attributeType="String" defaultValueString=""/>
+        <attribute name="proExpiresAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="proTierRaw" optional="YES" attributeType="String"/>
         <relationship name="budgets" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Budget" inverseName="household" inverseEntity="Budget"/>
         <relationship name="chatMessages" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="ChatMessage" inverseName="household" inverseEntity="ChatMessage"/>
         <relationship name="expenses" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Expense" inverseName="household" inverseEntity="Expense"/>

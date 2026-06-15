@@ -16,6 +16,19 @@ final class SubscriptionService: ObservableObject {
     @Published private(set) var isWorking = false
     @Published var lastError: String?
 
+    // Shared household entitlement: a plan one member bought, stamped on the
+    // shared household record, plus the household's participant count. These let
+    // a member inherit Pro from a housemate's plan while the household is within
+    // that plan's seat cap. Pushed in by the composition root via
+    // `updateHouseholdEntitlement`.
+    @Published private(set) var householdPlanTier: SubscriptionTier = .free
+    @Published private(set) var householdPlanExpiresAt: Date?
+    @Published private(set) var householdParticipantCount: Int = 1
+
+    /// Set by the composition root. Stamps this device's active plan onto the
+    /// shared household record so housemates within the seat cap inherit Pro.
+    var stampHouseholdEntitlement: ((SubscriptionTier, Date?) async -> Void)?
+
     #if DEBUG
     /// Dev-only override so every Pro feature is reachable while testing,
     /// regardless of StoreKit state. Toggled from Settings > Developer.
@@ -30,7 +43,42 @@ final class SubscriptionService: ObservableObject {
         #if DEBUG
         if devUnlockPro { return true }
         #endif
-        return tier.isPro
+        if tier.isPro { return true }   // bought it on this device
+        return householdSharedPro       // covered by a housemate's plan
+    }
+
+    /// The household's active shared plan as seen by this device (`.free` if
+    /// none is stamped or it has lapsed).
+    private var householdActivePlanTier: SubscriptionTier {
+        guard householdPlanTier.isPro else { return .free }
+        if let expiresAt = householdPlanExpiresAt, expiresAt < Date() { return .free }
+        return householdPlanTier
+    }
+
+    /// True when an active household plan covers the current participant count.
+    private var householdSharedPro: Bool {
+        householdActivePlanTier.isPro
+            && householdActivePlanTier.proSeatCap >= householdParticipantCount
+    }
+
+    /// The tier that governs household size, taking the better of this device's
+    /// own plan and any plan a housemate has published.
+    var effectivePlanTier: SubscriptionTier {
+        tier.rank >= householdActivePlanTier.rank ? tier : householdActivePlanTier
+    }
+
+    /// Max people allowed in the household for the current plan. Free,
+    /// Individual, and Duo top out at 2; Household allows 6.
+    var participationCap: Int {
+        effectivePlanTier == .household ? 6 : 2
+    }
+
+    /// Pushed in by the composition root whenever the household or its synced
+    /// plan / participant count changes, so `isPro` reflects shared plans.
+    func updateHouseholdEntitlement(tier: SubscriptionTier, expiresAt: Date?, participantCount: Int) {
+        householdPlanTier = tier
+        householdPlanExpiresAt = expiresAt
+        householdParticipantCount = max(1, participantCount)
     }
 
     init() {
@@ -53,8 +101,8 @@ final class SubscriptionService: ObservableObject {
 
     func loadProducts() async {
         do {
-            let loaded = try await Product.products(for: ProductID.shipping)
-            // Stable display order (see order(_:)): Individual then Household,
+            let loaded = try await Product.products(for: ProductID.all)
+            // Stable display order (see order(_:)): Individual, Duo, Household,
             // monthly before yearly.
             products = loaded.sorted { lhs, rhs in
                 order(lhs.id) < order(rhs.id)
@@ -87,14 +135,23 @@ final class SubscriptionService: ObservableObject {
     /// highest-ranked one if more than one is somehow active.
     func refreshEntitlements() async {
         var resolved: SubscriptionTier = .free
+        var resolvedExpiry: Date?
         for await result in Transaction.currentEntitlements {
             guard case .verified(let transaction) = result else { continue }
             if transaction.revocationDate != nil { continue }
             if let exp = transaction.expirationDate, exp < Date() { continue }
             let t = ProductID.tier(for: transaction.productID)
-            if t.rank > resolved.rank { resolved = t }
+            if t.rank > resolved.rank {
+                resolved = t
+                resolvedExpiry = transaction.expirationDate
+            }
         }
         tier = resolved
+        // Publish this device's own plan onto the shared household record so
+        // housemates within the seat cap inherit Pro.
+        if resolved.isPro {
+            await stampHouseholdEntitlement?(resolved, resolvedExpiry)
+        }
     }
 
     // MARK: - Purchase / restore

@@ -13,6 +13,11 @@ final class HouseholdService: ObservableObject {
     @Published private(set) var currentMember: HouseholdMember?
     @Published private(set) var iCloudStatus: CloudKitAccountStatus = .couldNotDetermine
 
+    /// Set by the composition root. Fired whenever the current household (and
+    /// its synced Pro plan) changes, so the subscription service can refresh
+    /// shared-entitlement state.
+    var onHouseholdChanged: ((Household?) -> Void)?
+
     init(households: HouseholdRepository, users: UserRepository, accounts: CloudKitAccountService) {
         self.households = households
         self.users = users
@@ -29,6 +34,7 @@ final class HouseholdService: ObservableObject {
             } else {
                 currentMember = nil
             }
+            onHouseholdChanged?(currentHousehold)
         } catch {
             AppLog.data.error("Household refresh failed: \(error.localizedDescription, privacy: .public)")
         }
@@ -36,6 +42,23 @@ final class HouseholdService: ObservableObject {
 
     func refreshAccountStatus() async {
         iCloudStatus = await accounts.currentStatus()
+    }
+
+    /// Stamps the given subscription plan onto the shared household record so
+    /// other members within the plan's seat cap inherit Pro. Passing `.free`
+    /// clears the stamp. Called by the subscription service when this device's
+    /// own entitlement resolves.
+    func stampEntitlement(tier: SubscriptionTier, expiresAt: Date?) async {
+        guard let id = currentHousehold?.id else { return }
+        let raw = tier.isPro ? tier.rawValue : nil
+        do {
+            try await households.setEntitlement(tierRaw: raw, expiresAt: expiresAt, householdID: id)
+            currentHousehold?.proTierRaw = raw
+            currentHousehold?.proExpiresAt = expiresAt
+            onHouseholdChanged?(currentHousehold)
+        } catch {
+            AppLog.data.error("Stamp entitlement failed: \(error.localizedDescription, privacy: .public)")
+        }
     }
 
     /// Create a new household locally and add the creator as the first member.

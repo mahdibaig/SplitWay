@@ -54,7 +54,7 @@ out of the public repo while letting the archive sign.
 ## 3. In-app purchases — REQUIRED for the paywall to work on TestFlight [you]
 
 The local `Splitway.storekit` file is IGNORED on TestFlight. The onboarding
-trial page and paywall read products from ASC. Create these four
+trial page and paywall read products from ASC. Create these six
 auto-renewable subscriptions in **ASC → your app → Subscriptions**, all in
 one subscription group named **Splitway Pro**:
 
@@ -62,26 +62,32 @@ one subscription group named **Splitway Pro**:
 |---|---|---|---|---|---|
 | `splitway_individual_monthly` | Individual Monthly | $4.99 | 1 month | 7-day free trial | No |
 | `splitway_individual_yearly` | Individual Yearly | $44.99 | 1 year | 7-day free trial | No |
+| `splitway_duo_monthly` | Duo Monthly | $7.99 | 1 month | 7-day free trial | No |
+| `splitway_duo_yearly` | Duo Yearly | $64.99 | 1 year | 7-day free trial | No |
 | `splitway_household_monthly` | Household Monthly | $12.99 | 1 month | 7-day free trial | Yes |
 | `splitway_household_yearly` | Household Yearly | $109.99 | 1 year | 7-day free trial | Yes |
 
 - Product IDs must match EXACTLY (they're in `ProductID` in
   `Splitway/Models/Domain/SubscriptionTier.swift`).
-- For each: add a **localized display name + description**, a **price**,
-  and an **Introductory Offer** = Free, 1 week.
-- Mark BOTH **Household** products **Family Sharable**; leave both
-  **Individual** products not sharable. This build relies on Apple Family
-  Sharing to give the whole household Pro, so the flag is load-bearing.
-- Set subscription **levels** so Household ranks above Individual (Household
-  = higher service level) for correct upgrade/downgrade.
+- For each: add a **localized display name + description**, a **price**, and
+  an **Introductory Offer** = Free, 1 week.
+- **Family Sharable:** mark BOTH **Household** products Yes; leave Individual
+  and Duo No. Household uses Apple Family Sharing as a reliable Pro fallback
+  for families; Duo's 2-seat cap cannot be expressed through Family Sharing
+  (which allows up to 6), so it relies on the in-app CloudKit propagation.
+- Set subscription **levels** so service rank is Household (highest) > Duo >
+  Individual, for correct upgrade/downgrade.
 - Add a **subscription group display name** and at least one **review
   screenshot** per product (ASC requires it before review).
+- Lifetime is intentionally NOT shipping.
 
-> **Duo is intentionally NOT in this build.** The code wires up
-> `splitway_duo_monthly` / `splitway_duo_yearly` but holds them out of the
-> paywall until CloudKit-based Pro sharing ships (a "2 people" plan can't be
-> enforced through Apple Family Sharing, which allows up to 6). Do NOT create
-> the Duo products in ASC yet. Lifetime is also intentionally not shipping.
+> **How multi-person Pro works in this build:** when a member subscribes,
+> their plan is stamped on the shared household record, and every member
+> within the plan's seat cap (Individual 1, Duo 2, Household 6) inherits Pro.
+> This rides the CloudKit shared store and MUST be validated on two devices
+> with two iCloud accounts before you trust it. The Core Data model gained
+> `proTierRaw` / `proExpiresAt` on Household, so re-deploy the CloudKit schema
+> to Production (see the gotcha reference at the bottom) when you archive.
 
 > Until these exist and are in "Ready to Submit" / approved state, the
 > "Start my free week" button on TestFlight will be disabled and prices

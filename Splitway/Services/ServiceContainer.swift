@@ -197,6 +197,25 @@ final class ServiceContainer: ObservableObject {
                 enabled: notificationPreferences.recurringRemindersEnabled
             )
         }
+
+        // Wire shared household entitlements (the trio's Pro-sharing):
+        let subscriptionService = self.subscriptionService
+        let cloudKitSharingService = self.cloudKitSharingService
+        // 1) When this device's own subscription resolves, stamp the plan on the
+        //    shared household record so housemates within the seat cap inherit Pro.
+        subscriptionService.stampHouseholdEntitlement = { [weak householdService] tier, expiresAt in
+            await householdService?.stampEntitlement(tier: tier, expiresAt: expiresAt)
+        }
+        // 2) When the household (and its synced plan / participant list) changes,
+        //    push the latest into the subscription service so `isPro` reflects
+        //    plans bought by other members.
+        householdService.onHouseholdChanged = { [weak subscriptionService, weak cloudKitSharingService] household in
+            subscriptionService?.updateHouseholdEntitlement(
+                tier: household?.activeProPlan?.tier ?? .free,
+                expiresAt: household?.activeProPlan?.expiresAt,
+                participantCount: cloudKitSharingService?.participantCount() ?? 1
+            )
+        }
     }
 
     #if DEBUG

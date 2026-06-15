@@ -7,6 +7,7 @@ protocol HouseholdRepository: Sendable {
     func updateName(_ name: String, householdID: HouseholdID) async throws
     func setGroupsEnabled(_ enabled: Bool, householdID: HouseholdID) async throws
     func regenerateInviteCode(householdID: HouseholdID) async throws -> String
+    func setEntitlement(tierRaw: String?, expiresAt: Date?, householdID: HouseholdID) async throws
 }
 
 /// Phase 1 uses "fetch first household in the local store" as the current household.
@@ -77,6 +78,20 @@ final class CoreDataHouseholdRepository: HouseholdRepository {
             entity.inviteCodeExpiresAt = Calendar.current.date(byAdding: .day, value: 7, to: Date())
             try ctx.save()
             return code
+        }
+    }
+
+    /// Stamps the active shared Pro plan onto the household record. Pass
+    /// `tierRaw: nil` to clear it. Syncs to other members via the shared
+    /// CloudKit store, where they read it back as `Household.activeProPlan`.
+    func setEntitlement(tierRaw: String?, expiresAt: Date?, householdID: HouseholdID) async throws {
+        try await persistence.performBackground { ctx in
+            guard let entity = try Self.findHousehold(id: householdID, in: ctx) else {
+                throw RepositoryError.notFound
+            }
+            entity.proTierRaw = tierRaw
+            entity.proExpiresAt = expiresAt
+            try ctx.save()
         }
     }
 

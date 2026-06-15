@@ -19,7 +19,9 @@ extension HouseholdEntity {
             inviteCodeExpiresAt: inviteCodeExpiresAt,
             groupsEnabled: groupsEnabled,
             createdAt: createdAt,
-            createdByUserID: UserID(createdByUserID)
+            createdByUserID: UserID(createdByUserID),
+            proTierRaw: proTierRaw,
+            proExpiresAt: proExpiresAt
         )
     }
 }

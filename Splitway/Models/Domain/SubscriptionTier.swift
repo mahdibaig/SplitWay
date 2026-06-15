@@ -1,10 +1,11 @@
 import Foundation
 
 /// What the user has paid for. `free` is the baseline; everything else is Pro.
-/// The first build ships Individual (just the subscriber) and Household (up to
-/// 6, shared via Apple Family Sharing for now). A Duo tier and CloudKit-based
-/// Pro sharing for roommates are wired up but held back until the multi-user
-/// identity layer lands, so Duo stays out of `ProductID.shipping`.
+/// v1 ships three tiers: Individual (just the subscriber), Duo (up to 2), and
+/// Household (up to 6). Pro is shared across the people in your Splitway
+/// household: a subscriber's plan is stamped on the shared household record and
+/// every member within the plan's `proSeatCap` inherits Pro. Household is also
+/// Apple-Family-shareable as a reliable fallback for families.
 enum SubscriptionTier: String, Sendable, Equatable {
     case free
     case individual
@@ -22,6 +23,18 @@ enum SubscriptionTier: String, Sendable, Equatable {
         case .individual: return 1
         case .duo:        return 2
         case .household:  return 3
+        }
+    }
+
+    /// How many people in a household this plan grants Pro to. The subscriber's
+    /// plan is stamped on the shared household record; members are covered while
+    /// the household's participant count stays within this cap.
+    var proSeatCap: Int {
+        switch self {
+        case .free:       return 0
+        case .individual: return 1
+        case .duo:        return 2
+        case .household:  return 6
         }
     }
 
@@ -45,18 +58,9 @@ enum ProductID {
     static let householdMonthly  = "splitway_household_monthly"
     static let householdYearly   = "splitway_household_yearly"
 
-    /// Every product the app knows how to honor, including ones not yet offered.
     static let all: [String] = [
         individualMonthly, individualYearly,
         duoMonthly, duoYearly,
-        householdMonthly, householdYearly
-    ]
-
-    /// Products actually offered in the current build's paywall. Duo is held
-    /// back until CloudKit-based Pro sharing exists, so it is omitted here while
-    /// remaining fully wired in `all` / `tier(for:)` for when it returns.
-    static let shipping: [String] = [
-        individualMonthly, individualYearly,
         householdMonthly, householdYearly
     ]
 
