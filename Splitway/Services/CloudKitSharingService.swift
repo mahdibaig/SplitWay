@@ -31,6 +31,10 @@ final class CloudKitSharingService: ObservableObject {
         CKContainer(identifier: PersistenceController.cloudKitContainerIdentifier)
     }
 
+    /// Public database, used for the invite-code → share-URL lookup so people
+    /// can join by typing a 6-char code (not only by opening the link).
+    private var publicDB: CKDatabase { cloudContainer.publicCloudDatabase }
+
     /// True only when the shared store loaded — i.e. accepting/holding shared
     /// data is possible on this device.
     var sharingAvailable: Bool { persistence.sharedStore != nil }
@@ -66,29 +70,37 @@ final class CloudKitSharingService: ObservableObject {
     /// one), configured so anyone with the invite link can join. The returned
     /// share is saved to CloudKit, ready to hand to `UICloudSharingController`.
     func prepareShare() async throws -> CKShare {
+        let share: CKShare
         if let existing = existingShare() {
             // Upgrade shares created before link-join was enabled.
             if existing.publicPermission != .readWrite {
                 existing.publicPermission = .readWrite
                 try? await persistShareUpdate(existing)
             }
-            return existing
-        }
-        guard let object = currentHouseholdObject() else {
-            throw SharingError.noHousehold
+            share = existing
+        } else {
+            guard let object = currentHouseholdObject() else {
+                throw SharingError.noHousehold
+            }
+            isPreparing = true
+            defer { isPreparing = false }
+
+            let (_, newShare, _) = try await container.share([object], to: nil)
+            newShare[CKShare.SystemFieldKey.title] =
+                (householdService.currentHousehold?.name ?? "Splitway household") as CKRecordValue
+            // Anyone with the link can join and edit the shared ledger. Without
+            // this the share is invite-only and a recipient who wasn't added by
+            // iCloud account hits "you don't have permission to access this".
+            newShare.publicPermission = .readWrite
+            try await persistShareUpdate(newShare)
+            share = newShare
         }
 
-        isPreparing = true
-        defer { isPreparing = false }
-
-        let (_, share, _) = try await container.share([object], to: nil)
-        share[CKShare.SystemFieldKey.title] =
-            (householdService.currentHousehold?.name ?? "Splitway household") as CKRecordValue
-        // Anyone with the link can join and edit the shared ledger. Without
-        // this the share is invite-only and a recipient who wasn't added by
-        // iCloud account hits "you don't have permission to access this".
-        share.publicPermission = .readWrite
-        try await persistShareUpdate(share)
+        // Publish the code → share-URL mapping (best effort) so a housemate can
+        // join by typing the invite code shown in Settings.
+        if let code = householdService.currentHousehold?.inviteCode, let url = share.url {
+            await publishInvite(code: code, shareURL: url)
+        }
         return share
     }
 
@@ -107,21 +119,8 @@ final class CloudKitSharingService: ObservableObject {
     /// shared store so they merge into the local graph. Called from the
     /// app delegate's `userDidAcceptCloudKitShareWith`.
     func acceptShare(metadata: CKShare.Metadata) async {
-        guard let sharedStore = persistence.sharedStore else {
-            errorMessage = "Sharing isn't available on this device yet."
-            AppLog.data.error("Accept share failed: shared store not loaded")
-            return
-        }
         do {
-            try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
-                container.acceptShareInvitations(from: [metadata], into: sharedStore) { _, error in
-                    if let error { cont.resume(throwing: error) }
-                    else { cont.resume() }
-                }
-            }
-            // Give CloudKit a moment to import, then refresh the UI's view of
-            // the household membership.
-            await householdService.refresh()
+            try await acceptShareThrowing(metadata: metadata)
             AppLog.data.info("Accepted CloudKit share")
         } catch {
             errorMessage = error.localizedDescription
@@ -129,11 +128,95 @@ final class CloudKitSharingService: ObservableObject {
         }
     }
 
+    /// Accepts a share and refreshes the household, throwing on failure (so the
+    /// invite-code path can surface the outcome).
+    func acceptShareThrowing(metadata: CKShare.Metadata) async throws {
+        guard let sharedStore = persistence.sharedStore else {
+            throw SharingError.sharingUnavailable
+        }
+        try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
+            container.acceptShareInvitations(from: [metadata], into: sharedStore) { _, error in
+                if let error { cont.resume(throwing: error) } else { cont.resume() }
+            }
+        }
+        // Give CloudKit a moment to import, then refresh the UI's view of the
+        // household membership.
+        await householdService.refresh()
+    }
+
+    // MARK: - Invite codes (public-DB lookup)
+
+    /// Writes a public `code → share URL` record so a housemate can join by
+    /// typing the code. The record name IS the namespaced code, so resolving is
+    /// a direct fetch (no queryable index to configure). Best-effort.
+    private func publishInvite(code: String, shareURL: URL) async {
+        let normalized = InviteCode.normalize(code)
+        guard !normalized.isEmpty else { return }
+        let record = CKRecord(
+            recordType: "HouseholdInvite",
+            recordID: CKRecord.ID(recordName: "invite_\(normalized)")
+        )
+        record["shareURL"] = shareURL.absoluteString as CKRecordValue
+        do {
+            _ = try await publicDB.modifyRecords(saving: [record], deleting: [], savePolicy: .allKeys)
+        } catch {
+            AppLog.data.error("Publish invite failed: \(error.localizedDescription, privacy: .public)")
+        }
+    }
+
+    /// Resolves an invite code to its share via the public lookup record, then
+    /// accepts the share. Throws if the code is unknown or accepting fails.
+    func joinByCode(_ code: String) async throws {
+        let normalized = InviteCode.normalize(code)
+        let recordID = CKRecord.ID(recordName: "invite_\(normalized)")
+        let record: CKRecord
+        do {
+            record = try await publicDB.record(for: recordID)
+        } catch {
+            throw SharingError.inviteNotFound
+        }
+        guard let urlString = record["shareURL"] as? String,
+              let url = URL(string: urlString) else {
+            throw SharingError.inviteNotFound
+        }
+        let metadata = try await fetchShareMetadata(for: url)
+        try await acceptShareThrowing(metadata: metadata)
+    }
+
+    /// Fetches CKShare metadata for a share URL (resolved from an invite code).
+    private func fetchShareMetadata(for url: URL) async throws -> CKShare.Metadata {
+        try await withCheckedThrowingContinuation { (cont: CheckedContinuation<CKShare.Metadata, Error>) in
+            let operation = CKFetchShareMetadataOperation(shareURLs: [url])
+            operation.shouldFetchRootRecord = false
+            var fetched: CKShare.Metadata?
+            operation.perShareMetadataResultBlock = { _, result in
+                if case .success(let metadata) = result { fetched = metadata }
+            }
+            operation.fetchShareMetadataResultBlock = { result in
+                switch result {
+                case .success:
+                    if let fetched { cont.resume(returning: fetched) }
+                    else { cont.resume(throwing: SharingError.inviteNotFound) }
+                case .failure(let error):
+                    cont.resume(throwing: error)
+                }
+            }
+            cloudContainer.add(operation)
+        }
+    }
+
     enum SharingError: LocalizedError {
         case noHousehold
+        case sharingUnavailable
+        case inviteNotFound
         var errorDescription: String? {
             switch self {
-            case .noHousehold: return "Create a household before inviting people."
+            case .noHousehold:
+                return "Create a household before inviting people."
+            case .sharingUnavailable:
+                return "Sharing isn't available on this device yet. Make sure you're signed in to iCloud."
+            case .inviteNotFound:
+                return "That invite code doesn't match an active household. Ask your housemate to open Share household, then try again."
             }
         }
     }

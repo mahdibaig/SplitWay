@@ -18,6 +18,11 @@ final class HouseholdService: ObservableObject {
     /// shared-entitlement state.
     var onHouseholdChanged: ((Household?) -> Void)?
 
+    /// Set by the composition root. Resolves an invite code to a shared
+    /// household and accepts it. Lives as a closure because HouseholdService
+    /// can't reference CloudKitSharingService directly without a cycle.
+    var joinByCodeHandler: ((String) async throws -> Void)?
+
     init(households: HouseholdRepository, users: UserRepository, accounts: CloudKitAccountService) {
         self.households = households
         self.users = users
@@ -161,9 +166,13 @@ final class HouseholdService: ObservableObject {
         currentHousehold?.groupsEnabled = enabled
     }
 
-    /// Phase 2: this routes through `ShareService` + the public `HouseholdShareMapping`
-    /// record. For Phase 1 it's a placeholder so the UI can wire up.
+    /// Joins a household by invite code: resolves the code to its shared
+    /// household via the sharing service, accepts the share, then refreshes.
     func joinHousehold(inviteCode: String) async throws {
-        throw RepositoryError.inviteCodeNotFound
+        guard let handler = joinByCodeHandler else {
+            throw RepositoryError.inviteCodeNotFound
+        }
+        try await handler(inviteCode)
+        await refresh()
     }
 }

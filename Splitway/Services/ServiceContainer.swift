@@ -216,6 +216,11 @@ final class ServiceContainer: ObservableObject {
                 participantCount: cloudKitSharingService?.participantCount() ?? 1
             )
         }
+        // Invite-code join: resolve the code → shared household via CloudKit.
+        householdService.joinByCodeHandler = { [weak cloudKitSharingService] code in
+            guard let cloudKitSharingService else { throw RepositoryError.inviteCodeNotFound }
+            try await cloudKitSharingService.joinByCode(code)
+        }
     }
 
     #if DEBUG
