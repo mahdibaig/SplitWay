@@ -15,6 +15,8 @@ struct SettingsView: View {
     @State private var showPaywall = false
     @State private var showManageSubscriptions = false
     @State private var paymentEditMember: HouseholdMember?
+    @State private var schemaMessage: String?
+    @State private var schemaRunning = false
 
     var body: some View {
         NavigationStack {
@@ -218,6 +220,22 @@ struct SettingsView: View {
                     Button("Add test member") {
                         Task { await services.addTestMember() }
                     }
+                    Button(schemaRunning ? "Pushing schema…" : "Push CloudKit schema (dev)") {
+                        let persistence = services.persistence
+                        schemaRunning = true
+                        Task {
+                            do {
+                                try await Task.detached {
+                                    try persistence.initializeCloudKitSchemaForDevelopment()
+                                }.value
+                                schemaMessage = "Schema pushed to the Development environment. Now open CloudKit Console → Deploy Schema Changes → Production."
+                            } catch {
+                                schemaMessage = "Failed: \(error.localizedDescription)"
+                            }
+                            schemaRunning = false
+                        }
+                    }
+                    .disabled(schemaRunning)
                     Button("Reset app data", role: .destructive) {
                         showResetConfirm = true
                     }
@@ -235,6 +253,14 @@ struct SettingsView: View {
             .task {
                 await membersService.refresh()
                 await groupService.refresh()
+            }
+            .alert("CloudKit schema", isPresented: Binding(
+                get: { schemaMessage != nil },
+                set: { if !$0 { schemaMessage = nil } }
+            )) {
+                Button("OK", role: .cancel) { schemaMessage = nil }
+            } message: {
+                Text(schemaMessage ?? "")
             }
             .sheet(isPresented: $showAddGroupSheet) {
                 AddGroupSheet(groupService: groupService)

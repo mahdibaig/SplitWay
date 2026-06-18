@@ -135,6 +135,18 @@ final class PersistenceController: ObservableObject, @unchecked Sendable {
         }
     }
 
+    #if DEBUG
+    /// Pushes the COMPLETE Core Data model to the **Development** CloudKit
+    /// schema in one shot — every record type and every field, including
+    /// optional attributes (like `Household.proTierRaw`) that are usually nil
+    /// and would otherwise never register. Run once from a Debug build (which
+    /// targets the Development environment), then promote Development ->
+    /// Production in the CloudKit Console. Never ship this in a release build.
+    func initializeCloudKitSchemaForDevelopment() throws {
+        try container.initializeCloudKitSchema(options: [])
+    }
+    #endif
+
     /// Deletes every entity in the local store. Dev-only; intended for the
     /// "Reset app data" button in Settings.
     func eraseAllData() async throws {
