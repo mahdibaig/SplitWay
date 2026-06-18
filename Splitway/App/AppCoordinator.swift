@@ -4,6 +4,7 @@ struct AppCoordinator: View {
     @EnvironmentObject private var services: ServiceContainer
     @EnvironmentObject private var householdService: HouseholdService
     @EnvironmentObject private var assistantPreferences: AssistantPreferences
+    @EnvironmentObject private var sharing: CloudKitSharingService
 
     @State private var hasLoaded = false
     @AppStorage("onboarding.assistantConsentSeen") private var consentSeen: Bool = false
@@ -48,6 +49,14 @@ struct AppCoordinator: View {
             }
             hasLoaded = true
             AppLog.lifecycle.info("App launched. iCloud=\(String(describing: householdService.iCloudStatus), privacy: .public)")
+        }
+        .alert("Household invite", isPresented: Binding(
+            get: { sharing.lastJoinMessage != nil },
+            set: { if !$0 { sharing.lastJoinMessage = nil } }
+        )) {
+            Button("OK", role: .cancel) { sharing.lastJoinMessage = nil }
+        } message: {
+            Text(sharing.lastJoinMessage ?? "")
         }
     }
 

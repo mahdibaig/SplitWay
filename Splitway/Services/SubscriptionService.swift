@@ -16,6 +16,10 @@ final class SubscriptionService: ObservableObject {
     @Published private(set) var isWorking = false
     @Published var lastError: String?
 
+    /// Diagnostic shown when the paywall is empty: whether StoreKit returned 0
+    /// products (server-side: agreement / propagation) or actually errored.
+    @Published private(set) var productLoadNote: String?
+
     // Shared household entitlement: a plan one member bought, stamped on the
     // shared household record, plus the household's participant count. These let
     // a member inherit Pro from a housemate's plan while the household is within
@@ -107,7 +111,13 @@ final class SubscriptionService: ObservableObject {
             products = loaded.sorted { lhs, rhs in
                 order(lhs.id) < order(rhs.id)
             }
+            if loaded.isEmpty {
+                productLoadNote = "StoreKit returned 0 of \(ProductID.all.count) products. The IDs are correct, so this is server-side: usually the Paid Applications Agreement isn't Active yet, or the products are still propagating (can take a few hours)."
+            } else {
+                productLoadNote = nil
+            }
         } catch {
+            productLoadNote = "StoreKit error: \(error.localizedDescription)"
             AppLog.lifecycle.error("Product load failed: \(error.localizedDescription, privacy: .public)")
         }
     }

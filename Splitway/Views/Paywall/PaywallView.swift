@@ -175,6 +175,12 @@ struct PaywallView: View {
                 .font(.cardLabel)
                 .foregroundStyle(Color.text2)
                 .multilineTextAlignment(.center)
+            if let note = subscriptions.productLoadNote {
+                Text(note)
+                    .font(.caption2)
+                    .foregroundStyle(Color.text3)
+                    .multilineTextAlignment(.center)
+            }
         }
         .frame(maxWidth: .infinity)
         .padding(Spacing.cardPad)

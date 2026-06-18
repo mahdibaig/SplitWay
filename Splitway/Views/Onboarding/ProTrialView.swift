@@ -77,6 +77,13 @@ struct ProTrialView: View {
                         .multilineTextAlignment(.center)
                 }
 
+                if subscriptions.monthlyProduct == nil, let note = subscriptions.productLoadNote {
+                    Text(note)
+                        .font(.caption2)
+                        .foregroundStyle(Color.text3)
+                        .multilineTextAlignment(.center)
+                }
+
                 Text("Free keeps unlimited expenses, all split types, settle up, and recurring bills. Subscription renews monthly until cancelled in your Apple ID settings.")
                     .font(.caption2)
                     .foregroundStyle(Color.text3)

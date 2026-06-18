@@ -17,6 +17,10 @@ final class CloudKitSharingService: ObservableObject {
 
     @Published var isPreparing = false
     @Published var errorMessage: String?
+    /// User-facing result of opening an invite link (success or the real
+    /// error), surfaced as an alert at the app root because the joiner isn't on
+    /// the sharing screen when a link opens the app.
+    @Published var lastJoinMessage: String?
 
     init(persistence: PersistenceController, householdService: HouseholdService) {
         self.persistence = persistence
@@ -122,8 +126,10 @@ final class CloudKitSharingService: ObservableObject {
         do {
             try await acceptShareThrowing(metadata: metadata)
             AppLog.data.info("Accepted CloudKit share")
+            lastJoinMessage = "You've joined the household."
         } catch {
             errorMessage = error.localizedDescription
+            lastJoinMessage = "Couldn't join this household: \(error.localizedDescription)"
             AppLog.data.error("Accept share failed: \(error.localizedDescription, privacy: .public)")
         }
     }
