@@ -63,10 +63,17 @@ final class CloudKitSharingService: ObservableObject {
     // MARK: - Create / accept
 
     /// Creates the CKShare for the current household (or returns the existing
-    /// one). The returned share is already saved to CloudKit, ready to hand to
-    /// `UICloudSharingController`.
+    /// one), configured so anyone with the invite link can join. The returned
+    /// share is saved to CloudKit, ready to hand to `UICloudSharingController`.
     func prepareShare() async throws -> CKShare {
-        if let existing = existingShare() { return existing }
+        if let existing = existingShare() {
+            // Upgrade shares created before link-join was enabled.
+            if existing.publicPermission != .readWrite {
+                existing.publicPermission = .readWrite
+                try? await persistShareUpdate(existing)
+            }
+            return existing
+        }
         guard let object = currentHouseholdObject() else {
             throw SharingError.noHousehold
         }
@@ -77,7 +84,23 @@ final class CloudKitSharingService: ObservableObject {
         let (_, share, _) = try await container.share([object], to: nil)
         share[CKShare.SystemFieldKey.title] =
             (householdService.currentHousehold?.name ?? "Splitway household") as CKRecordValue
+        // Anyone with the link can join and edit the shared ledger. Without
+        // this the share is invite-only and a recipient who wasn't added by
+        // iCloud account hits "you don't have permission to access this".
+        share.publicPermission = .readWrite
+        try await persistShareUpdate(share)
         return share
+    }
+
+    /// Persists changes made to a CKShare (e.g. `publicPermission`) back to
+    /// CloudKit via the container's shared-record machinery.
+    private func persistShareUpdate(_ share: CKShare) async throws {
+        guard let store = persistence.privateStore else { return }
+        try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
+            container.persistUpdatedShare(share, in: store) { _, error in
+                if let error { cont.resume(throwing: error) } else { cont.resume() }
+            }
+        }
     }
 
     /// Accept an incoming share invitation, routing its records into the
